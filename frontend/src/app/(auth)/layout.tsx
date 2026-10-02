@@ -1,0 +1,28 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Login | Hosmos",
+  description: "Sign in to Hosmos to manage your hostel operations.",
+};
+
+/**
+ * Auth layout — minimal, no sidebar, centered content.
+ * Used for login and registration pages.
+ */
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold tracking-tight">Hosmos</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Hostel Management Platform
+        </p>
+      </div>
+      {children}
+    </div>
+  );
+}

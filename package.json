@@ -1,0 +1,26 @@
+{
+  "name": "hosmos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hosmos — Multi-tenant Hostel Management SaaS",
+  "workspaces": [
+    "backend",
+    "frontend",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:generate": "npm run db:generate --workspace=backend",
+    "db:migrate": "npm run db:migrate --workspace=backend",
+    "db:studio": "npm run db:studio --workspace=backend"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
