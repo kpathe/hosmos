@@ -20,7 +20,7 @@ function ApiClientConfigurator() {
       // Token refresher — called on 401; fetches new token via cookie
       async () => {
         try {
-          const res = await fetch("/api/proxy/auth/refresh", {
+          const res = await fetch("/api/v1/proxy/auth/refresh", {
             method: "POST",
             credentials: "include",
           });

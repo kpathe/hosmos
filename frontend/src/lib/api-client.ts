@@ -15,7 +15,7 @@ import type {
 //   - Error normalization to ApiClientError
 // ─────────────────────────────────────────────────────────────────────────────
 
-const API_BASE_URL = process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:3001/api";
+const API_BASE_URL = process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:3001/api/v1";
 
 export class ApiClientError extends Error {
   constructor(

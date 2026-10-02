@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const restoreSession = async () => {
       try {
-        const res = await fetch("/api/proxy/auth/refresh", {
+        const res = await fetch("/api/v1/proxy/auth/refresh", {
           method: "POST",
           credentials: "include", // Send the HttpOnly refresh token cookie
         });
@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await fetch("/api/proxy/auth/logout", {
+      await fetch("/api/v1/proxy/auth/logout", {
         method: "POST",
         credentials: "include",
         headers: state.accessToken

@@ -31,7 +31,7 @@ export function createApp(): express.Application {
 
   // ── General API Rate Limiting ───────────────────────────────────────────────
   // Applied globally. Auth-specific limits are applied at the route level.
-  app.use("/api", generalApiLimiter);
+  app.use("/api/v1", generalApiLimiter);
 
   // ── Health Check ────────────────────────────────────────────────────────────
   app.get("/health", (_req, res) => {
@@ -46,16 +46,16 @@ export function createApp(): express.Application {
   // Routes will be imported and mounted here as they are implemented:
   //
   // import { authRouter } from "../modules/auth/auth.routes.js";
-  // app.use("/api/auth", authRouter);
+  // app.use("/api/v1/auth", authRouter);
   //
   // import { adminRouter } from "../modules/admin/admin.routes.js";
-  // app.use("/api/admin", adminRouter);
+  // app.use("/api/v1/admin", adminRouter);
   //
   // import { portalRouter } from "../modules/portal/portal.routes.js";
-  // app.use("/api/portal", portalRouter);
+  // app.use("/api/v1/portal", portalRouter);
 
   if (isDevelopment) {
-    app.get("/api", (_req, res) => {
+    app.get("/api/v1", (_req, res) => {
       res.json({ message: "Hosmos API — Phase 0 scaffold ready. Routes coming in Phase 1." });
     });
   }
