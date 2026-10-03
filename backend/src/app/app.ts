@@ -1,9 +1,11 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import cookieParser from "cookie-parser";
 import { corsAllowedOrigins, isDevelopment } from "../config/env.js";
 import { errorMiddleware } from "../middlewares/error.middleware.js";
 import { generalApiLimiter } from "../middlewares/rate-limit.middleware.js";
+import { authRouter } from "../modules/auth/auth.routes.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Express Application Factory
@@ -25,9 +27,10 @@ export function createApp(): express.Application {
     })
   );
 
-  // ── Body Parsing ────────────────────────────────────────────────────────────
+  // ── Body & Cookie Parsing ───────────────────────────────────────────────────
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+  app.use(cookieParser());
 
   // ── General API Rate Limiting ───────────────────────────────────────────────
   // Applied globally. Auth-specific limits are applied at the route level.
@@ -43,10 +46,7 @@ export function createApp(): express.Application {
   });
 
   // ── API Routes (registered in Phase 1+) ────────────────────────────────────
-  // Routes will be imported and mounted here as they are implemented:
-  //
-  // import { authRouter } from "../modules/auth/auth.routes.js";
-  // app.use("/api/v1/auth", authRouter);
+  app.use("/api/v1/auth", authRouter);
   //
   // import { adminRouter } from "../modules/admin/admin.routes.js";
   // app.use("/api/v1/admin", adminRouter);
