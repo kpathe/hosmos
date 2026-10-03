@@ -65,6 +65,32 @@ export interface LoginResponse {
   };
 }
 
+export interface LoginOwnerRequest {
+  email: string;
+  password_plain: string;
+}
+
+export interface LoginManagerRequest {
+  username: string;
+  password_plain: string;
+}
+
+export interface LoginHostellerRequest {
+  identifier: string; // username or email
+  password_plain: string;
+}
+
+export interface RegisterHostellerRequest {
+  email: string; // Used to look up the admitted record
+  username: string;
+  password_plain: string;
+}
+
+export interface ChangePasswordRequest {
+  old_password_plain: string;
+  new_password_plain: string;
+}
+
 // ─── Hostel ───────────────────────────────────────────────────────────────────
 
 export interface HostelDto {
