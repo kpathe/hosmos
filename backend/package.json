@@ -17,10 +17,10 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/db/migrate.ts",
+    "db:migrate": "node --dns-result-order=ipv4first --no-warnings=ExperimentalWarning --import tsx src/db/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
-    "seed:owner": "tsx src/db/seeds/seed-owner.ts"
+    "seed:owner": "node --dns-result-order=ipv4first --no-warnings=ExperimentalWarning --import tsx src/db/seeds/seed-owner.ts"
   },
   "dependencies": {
     "@hosmos/types": "*",

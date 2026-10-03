@@ -6,9 +6,9 @@ import {
   index,
   unique,
 } from "drizzle-orm/pg-core";
-import { hostels } from "./hostels.js";
-import { hostellers } from "./hostellers.js";
-import { payments } from "./payments.js";
+import { hostels } from "./hostels";
+import { hostellers } from "./hostellers";
+import { payments } from "./payments";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Advance Rent Allocations

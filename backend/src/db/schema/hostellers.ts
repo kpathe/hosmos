@@ -7,7 +7,7 @@ import {
   index,
   pgEnum,
 } from "drizzle-orm/pg-core";
-import { hostels } from "./hostels.js";
+import { hostels } from "./hostels";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Hosteller Status Enum

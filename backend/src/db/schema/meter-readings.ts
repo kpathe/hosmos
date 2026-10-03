@@ -8,8 +8,8 @@ import {
   timestamp,
   index,
 } from "drizzle-orm/pg-core";
-import { hostels } from "./hostels.js";
-import { rooms } from "./rooms.js";
+import { hostels } from "./hostels";
+import { rooms } from "./rooms";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Meter Readings

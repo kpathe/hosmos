@@ -7,8 +7,8 @@ import {
   index,
   unique,
 } from "drizzle-orm/pg-core";
-import { owners } from "./owners.js";
-import { hostels } from "./hostels.js";
+import { owners } from "./owners";
+import { hostels } from "./hostels";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Managers

@@ -8,9 +8,9 @@ import {
   index,
   pgEnum,
 } from "drizzle-orm/pg-core";
-import { hostels } from "./hostels.js";
-import { hostellers } from "./hostellers.js";
-import { bills } from "./bills.js";
+import { hostels } from "./hostels";
+import { hostellers } from "./hostellers";
+import { bills } from "./bills";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Payment Mode Enum

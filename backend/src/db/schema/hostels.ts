@@ -6,7 +6,7 @@ import {
   timestamp,
   index,
 } from "drizzle-orm/pg-core";
-import { owners } from "./owners.js";
+import { owners } from "./owners";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Hostels

@@ -7,24 +7,25 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Core tenant hierarchy
-export * from "./owners.js";
-export * from "./hostels.js";
-export * from "./managers.js";
-export * from "./pricing-models.js";
-export * from "./rooms.js";
-export * from "./hostellers.js";
+// Core tenant hierarchy
+export * from "./owners";
+export * from "./hostels";
+export * from "./managers";
+export * from "./pricing-models";
+export * from "./rooms";
+export * from "./hostellers";
 
 // Occupancy and rooms
-export * from "./room-occupancies.js";
+export * from "./room-occupancies";
 
 // Financial
-export * from "./bills.js";
-export * from "./payments.js";
-export * from "./advance-rent-allocations.js";
-export * from "./security-deposits.js";
+export * from "./bills";
+export * from "./payments";
+export * from "./advance-rent-allocations";
+export * from "./security-deposits";
 
 // Electricity
-export * from "./meter-readings.js";
+export * from "./meter-readings";
 
 // Authentication
-export * from "./refresh-tokens.js";
+export * from "./refresh-tokens";

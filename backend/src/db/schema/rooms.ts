@@ -7,8 +7,8 @@ import {
   index,
   unique,
 } from "drizzle-orm/pg-core";
-import { hostels } from "./hostels.js";
-import { pricingModels } from "./pricing-models.js";
+import { hostels } from "./hostels";
+import { pricingModels } from "./pricing-models";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Rooms

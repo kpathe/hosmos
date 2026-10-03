@@ -12,7 +12,10 @@ const pool = new pg.Pool({
   // Connection pool settings
   max: env.NODE_ENV === "production" ? 20 : 5,
   idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 5_000,
+  connectionTimeoutMillis: 30_000,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 // Log pool errors (never crash the process on idle connection errors)
