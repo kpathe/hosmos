@@ -6,6 +6,10 @@ import { corsAllowedOrigins, isDevelopment } from "../config/env.js";
 import { errorMiddleware } from "../middlewares/error.middleware.js";
 import { generalApiLimiter } from "../middlewares/rate-limit.middleware.js";
 import { authRouter } from "../modules/auth/auth.routes.js";
+import { hostelsRouter } from "../modules/hostels/hostels.routes.js";
+import { pricingRouter } from "../modules/pricing/pricing.routes.js";
+import { roomsRouter } from "../modules/rooms/rooms.routes.js";
+import { managersRouter } from "../modules/managers/managers.routes.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Express Application Factory
@@ -47,6 +51,10 @@ export function createApp(): express.Application {
 
   // ── API Routes (registered in Phase 1+) ────────────────────────────────────
   app.use("/api/v1/auth", authRouter);
+  app.use("/api/v1/hostels", hostelsRouter);
+  app.use("/api/v1/pricing", pricingRouter);
+  app.use("/api/v1/rooms", roomsRouter);
+  app.use("/api/v1/managers", managersRouter);
   //
   // import { adminRouter } from "../modules/admin/admin.routes.js";
   // app.use("/api/v1/admin", adminRouter);

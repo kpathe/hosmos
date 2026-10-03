@@ -9,7 +9,7 @@ import { AuthenticationError, AuthorizationError } from "../utils/errors.js";
  * 
  * Must be used AFTER authMiddleware.
  */
-export function requireTenant(req: Request, _res: Response, next: NextFunction): void {
+export function tenantMiddleware(req: Request, _res: Response, next: NextFunction): void {
   if (!req.user) {
     throw new AuthenticationError("User is not authenticated");
   }

@@ -103,6 +103,45 @@ export interface HostelDto {
   created_at: string;
 }
 
+export interface CreateHostelRequest {
+  name: string;
+  address?: string;
+  electricity_rate_paise?: number;
+  security_deposit_amount_paise?: number;
+  late_fine_amount_paise?: number;
+}
+
+export interface UpdateHostelRequest {
+  name?: string;
+  address?: string;
+  electricity_rate_paise?: number;
+  security_deposit_amount_paise?: number;
+  late_fine_amount_paise?: number;
+}
+
+// ─── Manager ──────────────────────────────────────────────────────────────────
+
+export interface ManagerDto {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  created_at: string;
+}
+
+export interface CreateManagerRequest {
+  name: string;
+  email: string;
+  password_plain: string;
+  phone?: string;
+}
+
+export interface UpdateManagerRequest {
+  name?: string;
+  phone?: string;
+  password_plain?: string; // Optional password reset
+}
+
 // ─── Pricing Model ────────────────────────────────────────────────────────────
 
 export interface PricingModelDto {
@@ -117,6 +156,24 @@ export interface PricingModelDto {
   created_at: string;
 }
 
+export interface CreatePricingModelRequest {
+  name: string;
+  charging_basis: ChargingBasis;
+  monthly_amount_paise: number;
+  compatible_capacity: number;
+  compatible_floors?: string[];
+  is_active?: boolean;
+}
+
+export interface UpdatePricingModelRequest {
+  name?: string;
+  charging_basis?: ChargingBasis;
+  monthly_amount_paise?: number;
+  compatible_capacity?: number;
+  compatible_floors?: string[];
+  is_active?: boolean;
+}
+
 // ─── Room ─────────────────────────────────────────────────────────────────────
 
 export interface RoomDto {
@@ -129,6 +186,29 @@ export interface RoomDto {
   pricing_model: PricingModelDto | null;
   active_occupant_count: number; // Derived
   created_at: string;
+}
+
+export interface CreateRoomRequest {
+  room_number: string;
+  floor: string;
+  capacity: number;
+  pricing_model_id?: string;
+}
+
+export interface CreateRoomsBulkRequest {
+  start_number: number;
+  end_number: number;
+  prefix?: string;
+  floor: string;
+  capacity: number;
+  pricing_model_id?: string;
+}
+
+export interface UpdateRoomRequest {
+  room_number?: string;
+  floor?: string;
+  capacity?: number;
+  pricing_model_id?: string | null;
 }
 
 // ─── Hosteller ────────────────────────────────────────────────────────────────

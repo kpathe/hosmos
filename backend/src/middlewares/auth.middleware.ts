@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../utils/crypto.js";
-import { AuthenticationError } from "../utils/errors.js";
+import { AuthenticationError, AuthorizationError } from "../utils/errors.js";
 import type { JwtPayload } from "../config/jwt.js";
 
 // Extend Express Request to carry authenticated user
@@ -22,7 +22,7 @@ declare global {
  *
  * On failure: throws AuthenticationError (caught by global error middleware).
  */
-export function authMiddleware(
+export function requireAuth(
   req: Request,
   _res: Response,
   next: NextFunction
@@ -40,4 +40,16 @@ export function authMiddleware(
 
   req.user = payload;
   next();
+}
+
+export function requireRole(roles: string[]) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user) {
+      throw new AuthenticationError("User is not authenticated");
+    }
+    if (!roles.includes(req.user.role)) {
+      throw new AuthorizationError("You do not have permission to access this resource");
+    }
+    next();
+  };
 }

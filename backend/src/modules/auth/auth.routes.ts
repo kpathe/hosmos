@@ -3,7 +3,7 @@ import { z } from "zod";
 import { authController } from "./auth.controller.js";
 import { validateBody } from "../../middlewares/validate.middleware.js";
 import { authLoginLimiter, authRegisterLimiter, authRefreshLimiter } from "../../middlewares/rate-limit.middleware.js";
-import { authMiddleware } from "../../middlewares/auth.middleware.js";
+import { requireAuth } from "../../middlewares/auth.middleware.js";
 
 export const authRouter = Router();
 
@@ -48,4 +48,4 @@ authRouter.post("/refresh", authRefreshLimiter, authController.refresh);
 authRouter.post("/logout", authController.logout);
 
 // Must be authenticated to change password
-authRouter.post("/change-password", authMiddleware, validateBody(changePasswordSchema), authController.changePassword);
+authRouter.post("/change-password", requireAuth, validateBody(changePasswordSchema), authController.changePassword);
