@@ -15,7 +15,15 @@ import type {
 //   - Error normalization to ApiClientError
 // ─────────────────────────────────────────────────────────────────────────────
 
-const API_BASE_URL = process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:3001/api/v1";
+// ── Base URL ─────────────────────────────────────────────────────────────────
+// In the browser we always route through the Next.js proxy (/api/v1/proxy/*).
+// This keeps requests same-origin so the HttpOnly refresh-token cookie
+// is sent automatically without CORS or SameSite issues.
+// The proxy forwards everything to the real backend.
+const API_BASE_URL =
+  typeof window === "undefined"
+    ? (process.env.BACKEND_URL ?? "http://localhost:3001/api/v1") // server-side (SSR)
+    : "/api/v1/proxy"; // client-side: always use the local Next.js proxy
 
 export class ApiClientError extends Error {
   constructor(
@@ -29,16 +37,39 @@ export class ApiClientError extends Error {
   }
 }
 
-// Token provider — injected by the auth context at runtime
-let getAccessToken: (() => string | null) | null = null;
-let refreshTokenFn: (() => Promise<string | null>) | null = null;
+// ─────────────────────────────────────────────────────────────────────────────
+// Token storage
+//
+// We keep the latest access token in a module-level variable (NOT React state)
+// so the retry path in apiFetch can read the freshly-refreshed token without
+// waiting for React's async setState to propagate. This is the root cause of
+// the "logged out before token expires" bug: the retry re-read getAccessToken()
+// from the React closure which still held the OLD expired token, causing a
+// second 401 that triggered UNAUTHORIZED → logout.
+//
+// The React context (AuthContext) is still the source of truth for the UI:
+//  - login / logout / initial restore update context state → _latestToken
+//  - setAccessToken (called after silent refresh) also updates → _latestToken
+// ─────────────────────────────────────────────────────────────────────────────
+
+let _latestToken: string | null = null;
+let _refreshFn: (() => Promise<string | null>) | null = null;
+// Module-level lock to prevent concurrent refresh races
+let _refreshPromise: Promise<string | null> | null = null;
+
+/**
+ * Called by AuthProvider on every token change.
+ * Keeps our module-level mirror in sync with React state.
+ */
+export function setModuleToken(token: string | null) {
+  _latestToken = token;
+}
 
 export function configureApiClient(
-  tokenGetter: () => string | null,
+  _tokenGetter: () => string | null, // kept for signature compat, not used internally
   tokenRefresher: () => Promise<string | null>
 ) {
-  getAccessToken = tokenGetter;
-  refreshTokenFn = tokenRefresher;
+  _refreshFn = tokenRefresher;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -50,7 +81,7 @@ async function apiFetch<T>(
   options: RequestInit = {},
   _retried = false
 ): Promise<T> {
-  const token = getAccessToken?.();
+  const token = _latestToken;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -68,9 +99,17 @@ async function apiFetch<T>(
   });
 
   // ── 401: try one token refresh then retry ─────────────────────────────────
-  if (response.status === 401 && !_retried && refreshTokenFn) {
-    const newToken = await refreshTokenFn();
+  if (response.status === 401 && !_retried && _refreshFn) {
+    // Deduplicate concurrent refresh calls
+    if (!_refreshPromise) {
+      _refreshPromise = _refreshFn().finally(() => {
+        _refreshPromise = null;
+      });
+    }
+
+    const newToken = await _refreshPromise;
     if (newToken) {
+      // _latestToken is already updated by setModuleToken inside refreshFn
       return apiFetch<T>(path, options, true);
     }
     // Refresh failed — throw auth error
@@ -109,8 +148,8 @@ export const apiClient = {
   /**
    * GET request — returns the inner `data` field of ApiSuccessResponse
    */
-  async get<T>(path: string): Promise<T> {
-    const res = await apiFetch<ApiSuccessResponse<T>>(path);
+  async get<T>(path: string, customHeaders?: Record<string, string>): Promise<T> {
+    const res = await apiFetch<ApiSuccessResponse<T>>(path, { headers: customHeaders });
     return res.data;
   },
 
@@ -118,18 +157,20 @@ export const apiClient = {
    * GET list request — returns data + meta from ApiCollectionResponse
    */
   async getList<T>(
-    path: string
+    path: string,
+    customHeaders?: Record<string, string>
   ): Promise<ApiCollectionResponse<T>> {
-    return apiFetch<ApiCollectionResponse<T>>(path);
+    return apiFetch<ApiCollectionResponse<T>>(path, { headers: customHeaders });
   },
 
   /**
    * POST request
    */
-  async post<TBody, TResponse>(path: string, body: TBody): Promise<TResponse> {
+  async post<TBody, TResponse>(path: string, body: TBody, customHeaders?: Record<string, string>): Promise<TResponse> {
     const res = await apiFetch<ApiSuccessResponse<TResponse>>(path, {
       method: "POST",
       body: JSON.stringify(body),
+      headers: customHeaders,
     });
     return res.data;
   },
@@ -137,10 +178,11 @@ export const apiClient = {
   /**
    * PATCH request
    */
-  async patch<TBody, TResponse>(path: string, body: TBody): Promise<TResponse> {
+  async patch<TBody, TResponse>(path: string, body: TBody, customHeaders?: Record<string, string>): Promise<TResponse> {
     const res = await apiFetch<ApiSuccessResponse<TResponse>>(path, {
       method: "PATCH",
       body: JSON.stringify(body),
+      headers: customHeaders,
     });
     return res.data;
   },
@@ -148,9 +190,10 @@ export const apiClient = {
   /**
    * DELETE request
    */
-  async delete<TResponse>(path: string): Promise<TResponse> {
+  async delete<TResponse>(path: string, customHeaders?: Record<string, string>): Promise<TResponse> {
     const res = await apiFetch<ApiSuccessResponse<TResponse>>(path, {
       method: "DELETE",
+      headers: customHeaders,
     });
     return res.data;
   },

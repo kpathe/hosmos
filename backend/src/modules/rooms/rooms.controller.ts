@@ -70,6 +70,20 @@ export class RoomsController {
       next(error);
     }
   }
+
+  async deleteRoom(req: Request<{ id: string }>, res: Response<ApiSuccessResponse<{ success: boolean }>>, next: NextFunction) {
+    try {
+      const hostelId = req.headers["x-hostel-id"];
+      if (typeof hostelId !== "string") throw new ValidationError("x-hostel-id header is required");
+
+      const id = req.params.id as string;
+      await roomsService.deleteRoom(id, hostelId);
+      
+      res.status(200).json({ data: { success: true } });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const roomsController = new RoomsController();

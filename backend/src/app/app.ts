@@ -10,6 +10,8 @@ import { hostelsRouter } from "../modules/hostels/hostels.routes.js";
 import { pricingRouter } from "../modules/pricing/pricing.routes.js";
 import { roomsRouter } from "../modules/rooms/rooms.routes.js";
 import { managersRouter } from "../modules/managers/managers.routes.js";
+import { admissionsRouter } from "../modules/admissions/admissions.routes.js";
+import { hostellersRouter } from "../modules/hostellers/hostellers.routes.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Express Application Factory
@@ -27,7 +29,7 @@ export function createApp(): express.Application {
       origin: corsAllowedOrigins,
       credentials: true, // Required for HttpOnly cookie exchange
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
+      allowedHeaders: ["Content-Type", "Authorization", "x-hostel-id"],
     })
   );
 
@@ -55,6 +57,8 @@ export function createApp(): express.Application {
   app.use("/api/v1/pricing", pricingRouter);
   app.use("/api/v1/rooms", roomsRouter);
   app.use("/api/v1/managers", managersRouter);
+  app.use("/api/v1/admissions", admissionsRouter);
+  app.use("/api/v1/hostellers", hostellersRouter);
   //
   // import { adminRouter } from "../modules/admin/admin.routes.js";
   // app.use("/api/v1/admin", adminRouter);

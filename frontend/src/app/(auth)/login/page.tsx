@@ -64,10 +64,11 @@ function LoginForm() {
   ) => {
     setErrorMsg(null);
     try {
-      const endpoint = `/api/v1/proxy/auth/login/${role}`;
+      const endpoint = `/api/auth/login/${role}`;
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data),
       });
 
@@ -82,11 +83,11 @@ function LoginForm() {
 
       // Route to correct dashboard
       if (returnUrl) {
-        router.push(returnUrl);
+        router.replace(returnUrl);
       } else if (role === "hosteller") {
-        router.push("/portal/dashboard");
+        router.replace("/portal/dashboard");
       } else {
-        router.push("/admin/dashboard");
+        router.replace("/hostels");
       }
     } catch (err: any) {
       setErrorMsg(err.message);

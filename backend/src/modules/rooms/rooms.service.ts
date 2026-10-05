@@ -128,6 +128,17 @@ export class RoomsService {
 
     return mapRoomToDto(updatedRecord!);
   }
+
+  async deleteRoom(id: string, hostelId: string): Promise<void> {
+    const [deleted] = await db
+      .delete(rooms)
+      .where(and(eq(rooms.id, id), eq(rooms.hostelId, hostelId)))
+      .returning();
+      
+    if (!deleted) {
+      throw new ValidationError("Room not found or unauthorized");
+    }
+  }
 }
 
 export const roomsService = new RoomsService();

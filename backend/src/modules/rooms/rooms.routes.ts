@@ -34,4 +34,10 @@ router.get(
   roomsController.getRooms.bind(roomsController)
 );
 
+router.delete(
+  "/:id",
+  requireRole(["owner", "manager"]),
+  roomsController.deleteRoom.bind(roomsController)
+);
+
 export { router as roomsRouter };

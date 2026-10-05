@@ -1,38 +1,18 @@
 import type { Request, Response, NextFunction } from "express";
 import { authService } from "./auth.service.js";
-import { env } from "../../config/env.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Auth Controller
 // ─────────────────────────────────────────────────────────────────────────────
-
-function setRefreshCookie(res: Response, token: string) {
-  res.cookie("hosmos_refresh_token", token, {
-    httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: "strict",
-    domain: env.COOKIE_DOMAIN,
-    maxAge: env.JWT_REFRESH_EXPIRY_SECONDS * 1000,
-  });
-}
-
-function clearRefreshCookie(res: Response) {
-  res.clearCookie("hosmos_refresh_token", {
-    httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: "strict",
-    domain: env.COOKIE_DOMAIN,
-  });
-}
+// The backend now returns the raw refresh token in the JSON body.
+// The Next.js frontend proxy intercepts this and sets the secure HttpOnly cookie.
+// This completely avoids any CORS/Domain/Proxy Set-Cookie parsing issues.
 
 export const authController = {
   loginOwner: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await authService.loginOwner(req.body);
-      setRefreshCookie(res, result.rawRefreshToken);
-      // Remove raw token from response body
-      const { rawRefreshToken, ...responseBody } = result;
-      res.json({ data: responseBody });
+      res.json({ data: result }); // Returns access_token, user, and rawRefreshToken
     } catch (error) {
       next(error);
     }
@@ -41,9 +21,7 @@ export const authController = {
   loginManager: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await authService.loginManager(req.body);
-      setRefreshCookie(res, result.rawRefreshToken);
-      const { rawRefreshToken, ...responseBody } = result;
-      res.json({ data: responseBody });
+      res.json({ data: result });
     } catch (error) {
       next(error);
     }
@@ -52,9 +30,7 @@ export const authController = {
   loginHosteller: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await authService.loginHosteller(req.body);
-      setRefreshCookie(res, result.rawRefreshToken);
-      const { rawRefreshToken, ...responseBody } = result;
-      res.json({ data: responseBody });
+      res.json({ data: result });
     } catch (error) {
       next(error);
     }
@@ -71,50 +47,39 @@ export const authController = {
 
   refresh: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const rawToken = req.cookies?.hosmos_refresh_token;
+      // The Next.js proxy will send the refresh token in the JSON body
+      const rawToken = req.body.refresh_token;
       if (!rawToken) {
         res.status(401).json({ error: { code: "UNAUTHORIZED", message: "No refresh token provided" } });
         return;
       }
 
       const result = await authService.refreshTokens(rawToken);
-      setRefreshCookie(res, result.rawRefreshToken);
-      const { rawRefreshToken, ...responseBody } = result;
-      res.json({ data: responseBody });
+      res.json({ data: result });
     } catch (error) {
-      clearRefreshCookie(res);
       next(error);
     }
   },
 
   logout: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const rawToken = req.cookies?.hosmos_refresh_token;
+      const rawToken = req.body.refresh_token;
       if (rawToken) {
         await authService.logout(rawToken);
       }
-      clearRefreshCookie(res);
       res.json({ data: { success: true } });
     } catch (error) {
-      // Even if it fails, clear the cookie
-      clearRefreshCookie(res);
       next(error);
     }
   },
 
   changePassword: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // User must be authenticated to change password
-      // The auth middleware injects req.user
       if (!req.user) {
         res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Unauthorized" } });
         return;
       }
-
       await authService.changePassword(req.user.sub, req.user.role, req.body);
-      
-      // We revoke refresh tokens on password change, so we must clear the cookie
-      clearRefreshCookie(res);
       res.json({ data: { success: true, message: "Password changed successfully. Please log in again." } });
     } catch (error) {
       next(error);

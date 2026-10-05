@@ -4,37 +4,48 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode, useEffect } from "react";
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
 import { configureApiClient } from "@/lib/api-client";
+import { useRef } from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ApiClientConfigurator — wires the auth context into the API client
+// ApiClientConfigurator — wires the refresh function into the API client
 // Must be a child of AuthProvider so it can access useAuth()
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ApiClientConfigurator() {
-  const { accessToken } = useAuth();
+  const auth = useAuth();
+  const authRef = useRef(auth);
+  authRef.current = auth;
 
   useEffect(() => {
     configureApiClient(
-      // Token getter — called before every request
-      () => accessToken,
-      // Token refresher — called on 401; fetches new token via cookie
+      // Token getter (legacy param — not used internally any more)
+      () => authRef.current.accessToken,
+
+      // Token refresher — called on 401
       async () => {
         try {
-          const res = await fetch("/api/v1/proxy/auth/refresh", {
+          const res = await fetch("/api/auth/refresh", {
             method: "POST",
             credentials: "include",
           });
           if (!res.ok) return null;
+
           const data = (await res.json()) as {
             data: { access_token: string };
           };
-          return data.data.access_token;
+
+          const newToken = data.data.access_token;
+          // setAccessToken calls setModuleToken internally (auth-context.tsx)
+          authRef.current.setAccessToken(newToken);
+          return newToken;
         } catch {
           return null;
         }
       }
     );
-  }, [accessToken]);
+  // Only configure once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return null;
 }
@@ -54,7 +65,7 @@ export function Providers({ children }: { children: ReactNode }) {
             // Retry once on failure, with 1-second delay
             retry: 1,
             retryDelay: 1000,
-            // Don't refetch on window focus for financial data (prevents surprises)
+            // Don't refetch on window focus
             refetchOnWindowFocus: false,
           },
           mutations: {

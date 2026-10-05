@@ -231,6 +231,25 @@ export interface HostellerDto {
 
 // NOTE: aadhaar_number is never included in API responses (security)
 
+export interface CreateAdmissionRequest {
+  name: string;
+  father_name: string;
+  email: string;
+  phone: string;
+  college?: string;
+  branch?: string;
+  address?: string;
+  aadhaar_number?: string;
+  admission_date: string;
+  room_id: string;
+  security_deposit_amount_paise: number;
+  advance_months: number;
+  payment_mode: PaymentMode;
+  payment_date: string;
+  payment_reference?: string;
+  payment_description?: string;
+}
+
 // ─── Room Occupancy ───────────────────────────────────────────────────────────
 
 export interface RoomOccupancyDto {
@@ -241,6 +260,14 @@ export interface RoomOccupancyDto {
   hosteller_id: string;
   effective_from: string;
   effective_to: string | null;
+}
+
+export interface HostellerDetailsDto {
+  hosteller: HostellerDto;
+  current_room: RoomOccupancyDto | null;
+  security_deposit: SecurityDepositDto | null;
+  bills: BillDto[];
+  payments: PaymentDto[];
 }
 
 // ─── Bill ─────────────────────────────────────────────────────────────────────

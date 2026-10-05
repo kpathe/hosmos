@@ -29,3 +29,7 @@ export * from "./meter-readings";
 
 // Authentication
 export * from "./refresh-tokens";
+
+// Relations (required for db.query.* relational API)
+export * from "./relations";
+
