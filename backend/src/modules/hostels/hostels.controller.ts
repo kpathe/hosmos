@@ -27,13 +27,13 @@ export class HostelsController {
   }
 
   /**
-   * GET /api/v1/hostels/:id
-   * Returns a specific hostel by ID.
+   * GET /api/v1/hostels/:slug
+   * Returns a specific hostel by slug.
    */
-  async getHostelById(req: Request, res: Response<ApiSuccessResponse<HostelDto>>, next: NextFunction) {
+  async getHostelBySlug(req: Request, res: Response<ApiSuccessResponse<HostelDto>>, next: NextFunction) {
     try {
-      const hostelId = req.params["id"] as string;
-      const hostel = await hostelsService.getHostelById(hostelId);
+      const slug = req.params["slug"] as string;
+      const hostel = await hostelsService.getHostelBySlug(slug);
       
       res.status(200).json({ data: hostel });
     } catch (error) {
@@ -57,15 +57,15 @@ export class HostelsController {
   }
 
   /**
-   * PUT /api/v1/hostels/:id
+   * PUT /api/v1/hostels/:slug
    * Updates an existing hostel.
    */
-  async updateHostel(req: Request<{ id: string }, {}, UpdateHostelRequest>, res: Response<ApiSuccessResponse<HostelDto>>, next: NextFunction) {
+  async updateHostel(req: Request<{ slug: string }, {}, UpdateHostelRequest>, res: Response<ApiSuccessResponse<HostelDto>>, next: NextFunction) {
     try {
       const ownerId = req.user!.sub;
-      const hostelId = req.params.id as string;
+      const slug = req.params.slug as string;
       
-      const hostel = await hostelsService.updateHostel(hostelId, ownerId, req.body);
+      const hostel = await hostelsService.updateHostel(slug, ownerId, req.body);
       
       res.status(200).json({ data: hostel });
     } catch (error) {

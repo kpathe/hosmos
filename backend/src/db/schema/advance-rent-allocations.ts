@@ -28,7 +28,7 @@ export const advanceRentAllocations = pgTable(
   "advance_rent_allocations",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    hostelerId: uuid("hosteller_id")
+    hostellerId: uuid("hosteller_id")
       .notNull()
       .references(() => hostellers.id, { onDelete: "restrict" }),
     hostelId: uuid("hostel_id")
@@ -57,13 +57,13 @@ export const advanceRentAllocations = pgTable(
   (t) => [
     /** One advance allocation per hosteller per period */
     unique("uq_advance_allocation_period").on(
-      t.hostelerId,
+      t.hostellerId,
       t.billingPeriodYear,
       t.billingPeriodMonth
     ),
-    index("idx_advance_allocations_hosteller_id").on(t.hostelerId),
+    index("idx_advance_allocations_hosteller_id").on(t.hostellerId),
     index("idx_advance_allocations_lookup").on(
-      t.hostelerId,
+      t.hostellerId,
       t.billingPeriodYear,
       t.billingPeriodMonth
     ),

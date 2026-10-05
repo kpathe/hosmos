@@ -18,6 +18,7 @@ export const hostels = pgTable(
   "hostels",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull().unique(),
     ownerId: uuid("owner_id")
       .notNull()
       .references(() => owners.id, { onDelete: "restrict" }),

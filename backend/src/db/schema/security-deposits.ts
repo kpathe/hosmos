@@ -38,7 +38,7 @@ export const securityDeposits = pgTable(
   "security_deposits",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    hostelerId: uuid("hosteller_id")
+    hostellerId: uuid("hosteller_id")
       .notNull()
       .references(() => hostellers.id, { onDelete: "restrict" }),
     hostelId: uuid("hostel_id")
@@ -74,7 +74,7 @@ export const securityDeposits = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index("idx_security_deposits_hosteller_id").on(t.hostelerId),
+    index("idx_security_deposits_hosteller_id").on(t.hostellerId),
     index("idx_security_deposits_hostel_id").on(t.hostelId),
   ]
 );

@@ -1,4 +1,5 @@
 import { eq, and, sql } from "drizzle-orm";
+import { randomUUID } from "crypto";
 import { db } from "../../db/index.js";
 import { 
   rooms, 
@@ -81,6 +82,7 @@ export class AdmissionsService {
         aadhaarNumberEncrypted: payload.aadhaar_number || null, // Real app: encrypt this!
         admissionDate: payload.admission_date,
         status: "admitted",
+        username: payload?.username || `${payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}-${randomUUID().split('-')[0]}`,
         createdBy,
       }).returning();
       
@@ -89,7 +91,7 @@ export class AdmissionsService {
       // 5. Create occupancy
       await tx.insert(roomOccupancies).values({
         roomId: room.id,
-        hostelerId: hosteller.id,
+        hostellerId: hosteller.id,
         hostelId,
         effectiveFrom: payload.admission_date,
         createdBy,
@@ -107,7 +109,7 @@ export class AdmissionsService {
       
       const [bill] = await tx.insert(bills).values({
         hostelId,
-        hostelerId: hosteller.id,
+        hostellerId: hosteller.id,
         billingPeriodYear: billYear,
         billingPeriodMonth: billMonth,
         status: "paid", // Paid at admission
@@ -140,7 +142,7 @@ export class AdmissionsService {
 
       // 9. Create security deposit record
       const [securityDeposit] = await tx.insert(securityDeposits).values({
-        hostelerId: hosteller.id,
+        hostellerId: hosteller.id,
         hostelId,
         originalAmountPaise: payload.security_deposit_amount_paise,
         status: "held",
@@ -160,7 +162,7 @@ export class AdmissionsService {
           currentYear++;
         }
         advanceAllocationsToInsert.push({
-          hostelerId: hosteller.id,
+          hostellerId: hosteller.id,
           hostelId,
           billingPeriodYear: currentYear,
           billingPeriodMonth: currentMonth,
@@ -178,7 +180,7 @@ export class AdmissionsService {
       const paymentTotal = totalBillAmount + (payload.advance_months * row.pricingModel.monthlyAmountPaise);
       const [payment] = await tx.insert(payments).values({
         hostelId,
-        hostelerId: hosteller.id,
+        hostellerId: hosteller.id,
         billId: bill.id,
         recordNumber: `RCPT-${Date.now()}`,
         paymentDate: payload.payment_date,
@@ -194,7 +196,7 @@ export class AdmissionsService {
       if (insertedAllocations.length > 0) {
         await tx.update(advanceRentAllocations)
           .set({ sourcePaymentId: payment.id })
-          .where(eq(advanceRentAllocations.hostelerId, hosteller.id));
+          .where(eq(advanceRentAllocations.hostellerId, hosteller.id));
       }
 
       return {
@@ -221,7 +223,7 @@ export class AdmissionsService {
         admission_bill: {
           id: bill.id,
           hostel_id: bill.hostelId,
-          hosteller_id: bill.hostelerId,
+          hosteller_id: bill.hostellerId,
           hosteller_name: hosteller.name,
           billing_period_year: bill.billingPeriodYear,
           billing_period_month: bill.billingPeriodMonth,
@@ -255,7 +257,7 @@ export class AdmissionsService {
         payment: {
           id: payment.id,
           hostel_id: payment.hostelId,
-          hosteller_id: payment.hostelerId,
+          hosteller_id: payment.hostellerId,
           hosteller_name: hosteller.name,
           bill_id: payment.billId,
           record_number: payment.recordNumber,

@@ -58,14 +58,14 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
 
 export default function HostellerDetailPage() {
   const params = useParams();
-  const hostelId = params.hostelId as string;
+  const hostelSlug = params.hostelSlug as string;
   const hostellerId = params.hostellerId as string;
 
   const { data: response, isLoading } = useQuery({
     queryKey: ["hosteller-details", hostellerId],
     queryFn: () =>
       apiClient.get<HostellerDetailsDto>(`/hostellers/${hostellerId}/details`, {
-        "x-hostel-id": hostelId,
+        "x-hostel-slug": hostelSlug,
       }),
   });
 
@@ -108,7 +108,7 @@ export default function HostellerDetailPage() {
     <div className="space-y-6 animate-in fade-in-50 duration-500">
       {/* Back button */}
       <div className="flex items-center gap-4">
-        <Link href={`/${hostelId}/hostellers`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+        <Link href={`/${hostelSlug}/hostellers`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Hostellers
         </Link>

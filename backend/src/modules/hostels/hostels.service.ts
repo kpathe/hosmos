@@ -1,4 +1,5 @@
 import { eq, and } from "drizzle-orm";
+import { randomUUID } from "crypto";
 import { db } from "../../db/index.js";
 import { hostels } from "../../db/schema/hostels.js";
 import type { 
@@ -14,6 +15,7 @@ import { NotFoundError } from "../../utils/errors.js";
 function mapHostelToDto(record: typeof hostels.$inferSelect): HostelDto {
   return {
     id: record.id,
+    slug: record.slug,
     name: record.name,
     address: record.address,
     electricity_rate_paise: record.electricityRatePaise,
@@ -37,13 +39,13 @@ export class HostelsService {
   }
 
   /**
-   * Retrieves a single hostel by ID.
+   * Retrieves a single hostel by Slug.
    */
-  async getHostelById(hostelId: string): Promise<HostelDto> {
+  async getHostelBySlug(slug: string): Promise<HostelDto> {
     const [record] = await db
       .select()
       .from(hostels)
-      .where(eq(hostels.id, hostelId));
+      .where(eq(hostels.slug, slug));
 
     if (!record) {
       throw new NotFoundError("Hostel not found");
@@ -56,10 +58,15 @@ export class HostelsService {
    * Creates a new hostel for the specified owner.
    */
   async createHostel(ownerId: string, payload: CreateHostelRequest): Promise<HostelDto> {
+    const baseSlug = payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    const uniqueSuffix = randomUUID().split('-')[0];
+    const finalSlug = payload.slug || `${baseSlug}-${uniqueSuffix}`;
+
     const [record] = await db
       .insert(hostels)
       .values({
         ownerId,
+        slug: finalSlug,
         name: payload.name,
         address: payload.address ?? null,
         electricityRatePaise: payload.electricity_rate_paise ?? 0,
@@ -72,15 +79,15 @@ export class HostelsService {
   }
 
   /**
-   * Updates an existing hostel. 
+   * Updates an existing hostel by slug. 
    * Validates that the ownerId matches if provided.
    */
-  async updateHostel(hostelId: string, ownerId: string, payload: UpdateHostelRequest): Promise<HostelDto> {
+  async updateHostel(slug: string, ownerId: string, payload: UpdateHostelRequest): Promise<HostelDto> {
     // Verify existence and ownership
     const [existing] = await db
-      .select({ ownerId: hostels.ownerId })
+      .select({ ownerId: hostels.ownerId, id: hostels.id })
       .from(hostels)
-      .where(eq(hostels.id, hostelId));
+      .where(eq(hostels.slug, slug));
 
     if (!existing) {
       throw new NotFoundError("Hostel not found");
@@ -91,6 +98,7 @@ export class HostelsService {
     }
 
     const updates: any = {};
+    if (payload.slug !== undefined) updates.slug = payload.slug;
     if (payload.name !== undefined) updates.name = payload.name;
     if (payload.address !== undefined) updates.address = payload.address;
     if (payload.electricity_rate_paise !== undefined) updates.electricityRatePaise = payload.electricity_rate_paise;
@@ -101,7 +109,7 @@ export class HostelsService {
     const [updatedRecord] = await db
       .update(hostels)
       .set(updates)
-      .where(eq(hostels.id, hostelId))
+      .where(eq(hostels.slug, slug))
       .returning();
 
     return mapHostelToDto(updatedRecord!);

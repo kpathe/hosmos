@@ -30,14 +30,14 @@ const pricingSchema = z.object({
 
 export default function PricingModelsPage() {
   const params = useParams();
-  const hostelId = params.hostelId as string;
+  const hostelSlug = params.hostelSlug as string;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const { data: response, isLoading } = useQuery({
-    queryKey: ["pricing", hostelId],
-    queryFn: () => apiClient.getList<PricingModelDto>("/pricing", { "x-hostel-id": hostelId }),
+    queryKey: ["pricing", hostelSlug],
+    queryFn: () => apiClient.getList<PricingModelDto>("/pricing", { "x-hostel-slug": hostelSlug }),
   });
 
   const pricingModels = response?.data || [];
@@ -56,9 +56,9 @@ export default function PricingModelsPage() {
     mutationFn: (data: any) => apiClient.post<CreatePricingModelRequest, PricingModelDto>("/pricing", {
       ...data,
       monthly_amount_paise: Math.round(data.monthly_amount_rupees * 100)
-    }, { "x-hostel-id": hostelId }),
+    }, { "x-hostel-slug": hostelSlug }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["pricing", hostelId] });
+      queryClient.invalidateQueries({ queryKey: ["pricing", hostelSlug] });
       toast({ title: "Success", description: "Pricing model created successfully." });
       setIsCreateOpen(false);
       form.reset();

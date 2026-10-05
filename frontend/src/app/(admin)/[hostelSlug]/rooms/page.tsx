@@ -30,20 +30,20 @@ const roomSchema = z.object({
 
 export default function RoomsPage() {
   const params = useParams();
-  const hostelId = params.hostelId as string;
+  const hostelSlug = params.hostelSlug as string;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const router = useRouter();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const { data: roomsResponse, isLoading: isLoadingRooms } = useQuery({
-    queryKey: ["rooms", hostelId],
-    queryFn: () => apiClient.getList<RoomDto>("/rooms", { "x-hostel-id": hostelId }),
+    queryKey: ["rooms", hostelSlug],
+    queryFn: () => apiClient.getList<RoomDto>("/rooms", { "x-hostel-slug": hostelSlug }),
   });
 
   const { data: pricingResponse } = useQuery({
-    queryKey: ["pricing", hostelId],
-    queryFn: () => apiClient.getList<PricingModelDto>("/pricing", { "x-hostel-id": hostelId }),
+    queryKey: ["pricing", hostelSlug],
+    queryFn: () => apiClient.getList<PricingModelDto>("/pricing", { "x-hostel-slug": hostelSlug }),
   });
 
   const rooms = roomsResponse?.data || [];
@@ -60,9 +60,9 @@ export default function RoomsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiClient.delete(`/rooms/${id}`, { "x-hostel-id": hostelId }),
+    mutationFn: (id: string) => apiClient.delete(`/rooms/${id}`, { "x-hostel-slug": hostelSlug }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rooms", hostelId] });
+      queryClient.invalidateQueries({ queryKey: ["rooms", hostelSlug] });
       toast({ title: "Success", description: "Room deleted successfully." });
     },
     onError: (error: any) => {
@@ -71,9 +71,9 @@ export default function RoomsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateRoomRequest) => apiClient.post<CreateRoomRequest, RoomDto>("/rooms", data, { "x-hostel-id": hostelId }),
+    mutationFn: (data: CreateRoomRequest) => apiClient.post<CreateRoomRequest, RoomDto>("/rooms", data, { "x-hostel-slug": hostelSlug }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rooms", hostelId] });
+      queryClient.invalidateQueries({ queryKey: ["rooms", hostelSlug] });
       toast({ title: "Success", description: "Room created successfully." });
       setIsCreateOpen(false);
       form.reset();
@@ -198,7 +198,7 @@ export default function RoomsPage() {
                       <TableRow
                         key={room.id}
                         className="hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => router.push(`/${hostelId}/rooms/${room.id}`)}
+                        onClick={() => router.push(`/${hostelSlug}/rooms/${room.id}`)}
                       >
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
@@ -226,7 +226,7 @@ export default function RoomsPage() {
                             size="icon" 
                             onClick={(e) => {
                               e.stopPropagation();
-                              router.push(`/${hostelId}/rooms/${room.id}`);
+                              router.push(`/${hostelSlug}/rooms/${room.id}`);
                             }}
                           >
                             <Edit className="h-4 w-4" />

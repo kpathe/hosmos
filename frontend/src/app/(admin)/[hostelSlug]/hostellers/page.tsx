@@ -13,12 +13,12 @@ import { Users, Mail, Phone, Calendar } from "lucide-react";
 
 export default function HostellersPage() {
   const params = useParams();
-  const hostelId = params.hostelId as string;
+  const hostelSlug = params.hostelSlug as string;
   const router = useRouter();
 
   const { data: response, isLoading } = useQuery({
-    queryKey: ["hostellers", hostelId],
-    queryFn: () => apiClient.getList<HostellerDto>("/hostellers", { "x-hostel-id": hostelId }),
+    queryKey: ["hostellers", hostelSlug],
+    queryFn: () => apiClient.getList<HostellerDto>("/hostellers", { "x-hostel-slug": hostelSlug }),
   });
 
   const hostellers = response?.data || [];
@@ -65,7 +65,7 @@ export default function HostellersPage() {
                     <TableRow
                       key={hosteller.id}
                       className="hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => router.push(`/${hostelId}/hostellers/${hosteller.id}`)}
+                      onClick={() => router.push(`/${hostelSlug}/hostellers/${hosteller.username || hosteller.id}`)}
                     >
                       <TableCell className="font-medium">
                         <div className="hover:text-primary transition-colors">

@@ -37,7 +37,7 @@ export const payments = pgTable(
     hostelId: uuid("hostel_id")
       .notNull()
       .references(() => hostels.id, { onDelete: "restrict" }),
-    hostelerId: uuid("hosteller_id")
+    hostellerId: uuid("hosteller_id")
       .notNull()
       .references(() => hostellers.id, { onDelete: "restrict" }),
     billId: uuid("bill_id")
@@ -66,7 +66,7 @@ export const payments = pgTable(
   },
   (t) => [
     index("idx_payments_hostel_id").on(t.hostelId),
-    index("idx_payments_hosteller_id").on(t.hostelerId),
+    index("idx_payments_hosteller_id").on(t.hostellerId),
     index("idx_payments_bill_id").on(t.billId),
     index("idx_payments_payment_date").on(t.paymentDate),
   ]

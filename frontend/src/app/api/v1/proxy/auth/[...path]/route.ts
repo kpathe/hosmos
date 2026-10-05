@@ -59,7 +59,7 @@ async function handler(
 
   try {
     const headers = new Headers();
-    const FORWARDED = ["content-type", "authorization", "x-hostel-id"];
+    const FORWARDED = ["content-type", "authorization", "x-hostel-id", "x-hostel-slug"];
     for (const [key, value] of request.headers.entries()) {
       if (FORWARDED.includes(key.toLowerCase())) headers.set(key, value);
     }

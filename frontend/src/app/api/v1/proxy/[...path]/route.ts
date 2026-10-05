@@ -82,7 +82,7 @@ async function handler(
     // ── Build forwarded headers ────────────────────────────────────────────
     const headers = new Headers();
 
-    const FORWARDED = ["content-type", "authorization", "x-hostel-id", "x-request-id"];
+    const FORWARDED = ["content-type", "authorization", "x-hostel-id", "x-hostel-slug", "x-request-id"];
     for (const [key, value] of request.headers.entries()) {
       if (FORWARDED.includes(key.toLowerCase())) {
         headers.set(key, value);

@@ -51,7 +51,7 @@ export const bills = pgTable(
     hostelId: uuid("hostel_id")
       .notNull()
       .references(() => hostels.id, { onDelete: "restrict" }),
-    hostelerId: uuid("hosteller_id")
+    hostellerId: uuid("hosteller_id")
       .notNull()
       .references(() => hostellers.id, { onDelete: "restrict" }),
 
@@ -81,9 +81,9 @@ export const bills = pgTable(
   },
   (t) => [
     /** One bill per hosteller per billing period */
-    unique("uq_bill_period").on(t.hostelerId, t.billingPeriodYear, t.billingPeriodMonth),
+    unique("uq_bill_period").on(t.hostellerId, t.billingPeriodYear, t.billingPeriodMonth),
     index("idx_bills_hostel_id").on(t.hostelId),
-    index("idx_bills_hosteller_id").on(t.hostelerId),
+    index("idx_bills_hosteller_id").on(t.hostellerId),
     index("idx_bills_period").on(t.hostelId, t.billingPeriodYear, t.billingPeriodMonth),
     index("idx_bills_status").on(t.status),
   ]

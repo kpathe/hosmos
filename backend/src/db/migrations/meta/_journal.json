@@ -8,6 +8,13 @@
       "when": 1791036517215,
       "tag": "0000_lowly_sasquatch",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791211341895,
+      "tag": "0001_famous_master_chief",
+      "breakpoints": true
     }
   ]
 }

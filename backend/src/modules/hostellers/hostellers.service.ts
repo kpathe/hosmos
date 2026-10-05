@@ -28,7 +28,7 @@ class HostellersService {
       const records = await db
         .select({ hosteller: hostellers })
         .from(roomOccupancies)
-        .innerJoin(hostellers, eq(roomOccupancies.hostelerId, hostellers.id))
+        .innerJoin(hostellers, eq(roomOccupancies.hostellerId, hostellers.id))
         .where(
           and(
             eq(roomOccupancies.roomId, roomId),
@@ -72,7 +72,7 @@ class HostellersService {
       .innerJoin(rooms, eq(roomOccupancies.roomId, rooms.id))
       .where(
         and(
-          eq(roomOccupancies.hostelerId, hostellerId),
+          eq(roomOccupancies.hostellerId, hostellerId),
           isNull(roomOccupancies.effectiveTo)
         )
       )
@@ -82,20 +82,20 @@ class HostellersService {
 
     // All bills with items
     const billRows = await db.query.bills.findMany({
-      where: eq(bills.hostelerId, hostellerId),
+      where: eq(bills.hostellerId, hostellerId),
       with: { billItems: true },
       orderBy: [desc(bills.billingPeriodYear), desc(bills.billingPeriodMonth)],
     });
 
     // All payments
     const paymentRows = await db.query.payments.findMany({
-      where: eq(payments.hostelerId, hostellerId),
+      where: eq(payments.hostellerId, hostellerId),
       orderBy: [desc(payments.paymentDate)],
     });
 
     // Security deposit
     const depositRow = await db.query.securityDeposits.findFirst({
-      where: eq(securityDeposits.hostelerId, hostellerId),
+      where: eq(securityDeposits.hostellerId, hostellerId),
     });
 
     return {
@@ -106,7 +106,7 @@ class HostellersService {
             room_id: currentOccupancy.occupancy.roomId,
             room_number: currentOccupancy.room.roomNumber,
             floor: currentOccupancy.room.floor,
-            hosteller_id: currentOccupancy.occupancy.hostelerId,
+            hosteller_id: currentOccupancy.occupancy.hostellerId,
             effective_from: currentOccupancy.occupancy.effectiveFrom,
             effective_to: currentOccupancy.occupancy.effectiveTo,
           }
@@ -125,7 +125,7 @@ class HostellersService {
       bills: billRows.map(b => ({
         id: b.id,
         hostel_id: b.hostelId,
-        hosteller_id: b.hostelerId,
+        hosteller_id: b.hostellerId,
         hosteller_name: record.name,
         billing_period_year: b.billingPeriodYear,
         billing_period_month: b.billingPeriodMonth,
@@ -144,7 +144,7 @@ class HostellersService {
       payments: paymentRows.map(p => ({
         id: p.id,
         hostel_id: p.hostelId,
-        hosteller_id: p.hostelerId,
+        hosteller_id: p.hostellerId,
         hosteller_name: record.name,
         bill_id: p.billId,
         record_number: p.recordNumber,

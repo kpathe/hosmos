@@ -12,28 +12,28 @@ import Link from "next/link";
 
 export default function HostelDashboardPage() {
   const params = useParams();
-  const hostelId = params.hostelId as string;
+  const hostelSlug = params.hostelSlug as string;
 
   // Fetch hostel details
   const { data: hostelResponse, isLoading: isLoadingHostel } = useQuery({
-    queryKey: ["hostels", hostelId],
-    queryFn: () => apiClient.get<HostelDto>(`/hostels/${hostelId}`),
+    queryKey: ["hostels", hostelSlug],
+    queryFn: () => apiClient.get<HostelDto>(`/hostels/${hostelSlug}`),
   });
 
   // Fetch rooms for stats
   const { data: roomsResponse, isLoading: isLoadingRooms } = useQuery({
-    queryKey: ["rooms", hostelId],
-    queryFn: () => apiClient.getList<RoomDto>(`/rooms`, { "x-hostel-id": hostelId }),
+    queryKey: ["rooms", hostelSlug],
+    queryFn: () => apiClient.getList<RoomDto>(`/rooms`, { "x-hostel-slug": hostelSlug }),
   });
 
   const { data: managersResponse, isLoading: isLoadingManagers } = useQuery({
-    queryKey: ["managers", hostelId],
-    queryFn: () => apiClient.getList<ManagerDto>(`/managers`, { "x-hostel-id": hostelId }),
+    queryKey: ["managers", hostelSlug],
+    queryFn: () => apiClient.getList<ManagerDto>(`/managers`, { "x-hostel-slug": hostelSlug }),
   });
 
   const { data: pricingResponse, isLoading: isLoadingPricing } = useQuery({
-    queryKey: ["pricing", hostelId],
-    queryFn: () => apiClient.getList<PricingModelDto>(`/pricing`, { "x-hostel-id": hostelId }),
+    queryKey: ["pricing", hostelSlug],
+    queryFn: () => apiClient.getList<PricingModelDto>(`/pricing`, { "x-hostel-slug": hostelSlug }),
   });
 
   const hostel = hostelResponse;
@@ -142,14 +142,14 @@ export default function HostelDashboardPage() {
           <CardContent className="space-y-4 pt-4">
             <div className="grid grid-cols-2 gap-4">
               <Link 
-                href={`/${hostelId}/admissions`}
+                href={`/${hostelSlug}/admissions/new`}
                 className={buttonVariants({ variant: "outline", className: "w-full justify-start text-left font-normal" })}
               >
                 <Users className="mr-2 h-4 w-4" />
                 Admit Hosteller
               </Link>
               <Link 
-                href={`/${hostelId}/rooms`}
+                href={`/${hostelSlug}/rooms`}
                 className={buttonVariants({ variant: "outline", className: "w-full justify-start text-left font-normal" })}
               >
                 <Bed className="mr-2 h-4 w-4" />

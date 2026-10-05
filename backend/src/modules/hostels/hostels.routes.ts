@@ -21,7 +21,7 @@ router.get(
 );
 
 router.put(
-  "/:id",
+  "/:slug",
   requireRole(["owner"]),
   hostelsController.updateHostel.bind(hostelsController)
 );
@@ -29,9 +29,9 @@ router.put(
 // Routes for both Owners and Managers
 // Later we will add TenantMiddleware to ensure managers can only access their assigned hostel
 router.get(
-  "/:id",
+  "/:slug",
   requireRole(["owner", "manager"]),
-  hostelsController.getHostelById.bind(hostelsController)
+  hostelsController.getHostelBySlug.bind(hostelsController)
 );
 
 export { router as hostelsRouter };

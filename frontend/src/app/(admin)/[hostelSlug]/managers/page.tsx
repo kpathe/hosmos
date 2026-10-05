@@ -29,14 +29,14 @@ const managerSchema = z.object({
 
 export default function ManagersPage() {
   const params = useParams();
-  const hostelId = params.hostelId as string;
+  const hostelSlug = params.hostelSlug as string;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const { data: response, isLoading } = useQuery({
-    queryKey: ["managers", hostelId],
-    queryFn: () => apiClient.getList<ManagerDto>("/managers", { "x-hostel-id": hostelId }),
+    queryKey: ["managers", hostelSlug],
+    queryFn: () => apiClient.getList<ManagerDto>("/managers", { "x-hostel-slug": hostelSlug }),
   });
 
   const managers = response?.data || [];
@@ -52,9 +52,9 @@ export default function ManagersPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiClient.delete(`/managers/${id}`, { "x-hostel-id": hostelId }),
+    mutationFn: (id: string) => apiClient.delete(`/managers/${id}`, { "x-hostel-slug": hostelSlug }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["managers", hostelId] });
+      queryClient.invalidateQueries({ queryKey: ["managers", hostelSlug] });
       toast({ title: "Success", description: "Manager removed successfully." });
     },
     onError: (error: any) => {
@@ -63,9 +63,9 @@ export default function ManagersPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateManagerRequest) => apiClient.post<CreateManagerRequest, ManagerDto>("/managers", data, { "x-hostel-id": hostelId }),
+    mutationFn: (data: CreateManagerRequest) => apiClient.post<CreateManagerRequest, ManagerDto>("/managers", data, { "x-hostel-slug": hostelSlug }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["managers", hostelId] });
+      queryClient.invalidateQueries({ queryKey: ["managers", hostelSlug] });
       toast({ title: "Success", description: "Manager added successfully." });
       setIsCreateOpen(false);
       form.reset();

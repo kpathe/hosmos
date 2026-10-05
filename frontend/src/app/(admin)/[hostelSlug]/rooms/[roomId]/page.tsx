@@ -13,15 +13,15 @@ import { ArrowLeft, User, Mail, Phone, Bed, Calendar, Users } from "lucide-react
 
 export default function RoomDetailPage() {
   const params = useParams();
-  const hostelId = params.hostelId as string;
+  const hostelSlug = params.hostelSlug as string;
   const roomId = params.roomId as string;
 
   // Fetch occupants of this room
   const { data: response, isLoading } = useQuery({
-    queryKey: ["hostellers", hostelId, { roomId }],
+    queryKey: ["hostellers", hostelSlug, { roomId }],
     queryFn: () =>
       apiClient.getList<HostellerDto>(`/hostellers?room_id=${roomId}`, {
-        "x-hostel-id": hostelId,
+        "x-hostel-slug": hostelSlug,
       }),
   });
 
@@ -39,7 +39,7 @@ export default function RoomDetailPage() {
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
       <div className="flex items-center gap-4">
-        <Link href={`/${hostelId}/rooms`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+        <Link href={`/${hostelSlug}/rooms`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Rooms
         </Link>
@@ -71,7 +71,7 @@ export default function RoomDetailPage() {
           {occupants.map((hosteller) => (
             <Link
               key={hosteller.id}
-              href={`/${hostelId}/hostellers/${hosteller.id}`}
+              href={`/${hostelSlug}/hostellers/${hosteller.id}`}
             >
               <Card className="group cursor-pointer transition-all duration-200 hover:border-primary/50 hover:shadow-md hover:-translate-y-0.5">
                 <CardHeader className="pb-3">

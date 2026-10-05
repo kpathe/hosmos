@@ -78,7 +78,7 @@ export default function HostelsPage() {
                     <p className="font-medium">{new Date(hostel.created_at).toLocaleDateString()}</p>
                   </div>
                 </div>
-                <Link href={`/${hostel.id}/dashboard`} className={`${buttonVariants({ variant: "outline" })} w-full`}>
+                <Link href={`/${hostel.slug}/dashboard`} className={`${buttonVariants({ variant: "outline" })} w-full`}>
                   Manage Property
                 </Link>
               </CardContent>

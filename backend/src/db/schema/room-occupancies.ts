@@ -42,7 +42,7 @@ export const roomOccupancies = pgTable(
       .notNull()
       .references(() => rooms.id, { onDelete: "restrict" }),
 
-    hostelerId: uuid("hosteller_id")
+    hostellerId: uuid("hosteller_id")
       .notNull()
       .references(() => hostellers.id, { onDelete: "restrict" }),
 
@@ -81,7 +81,7 @@ export const roomOccupancies = pgTable(
      * application-level check before inserting any occupancy record.
      */
     index("idx_room_occupancies_room_id").on(t.roomId),
-    index("idx_room_occupancies_hosteller_id").on(t.hostelerId),
+    index("idx_room_occupancies_hosteller_id").on(t.hostellerId),
     index("idx_room_occupancies_hostel_id").on(t.hostelId),
     index("idx_room_occupancies_effective_to").on(t.effectiveTo),
   ]

@@ -17,7 +17,7 @@ export function AdminSidebar() {
   // Exclude known global paths from being treated as hostel IDs
   const isGlobalRoute = ["admin", "hostels", "settings"].includes(firstSegment) || firstSegment === "";
   const isHostelContext = !isGlobalRoute && pathSegments.length >= 1;
-  const hostelId = isHostelContext ? firstSegment : null;
+  const hostelSlug = isHostelContext ? firstSegment : null;
 
   const globalLinks = [
     { href: "/hostels", label: "My Hostels", icon: Building },
@@ -25,14 +25,14 @@ export function AdminSidebar() {
   ];
 
   const hostelLinks = [
-    { href: `/${hostelId}/dashboard`, label: "Dashboard", icon: LayoutDashboard },
-    { href: `/${hostelId}/rooms`, label: "Rooms", icon: Bed },
-    { href: `/${hostelId}/pricing`, label: "Pricing Models", icon: CreditCard },
-    { href: `/${hostelId}/managers`, label: "Managers", icon: Users },
-    { href: `/${hostelId}/hostellers`, label: "Hostellers", icon: Users },
+    { href: `/${hostelSlug}/dashboard`, label: "Dashboard", icon: LayoutDashboard },
+    { href: `/${hostelSlug}/rooms`, label: "Rooms", icon: Bed },
+    { href: `/${hostelSlug}/pricing`, label: "Pricing Models", icon: CreditCard },
+    { href: `/${hostelSlug}/managers`, label: "Managers", icon: Users },
+    { href: `/${hostelSlug}/hostellers`, label: "Hostellers", icon: Users },
   ];
 
-  const links = hostelId ? hostelLinks : globalLinks;
+  const links = hostelSlug ? hostelLinks : globalLinks;
 
   return (
     <aside className="w-64 shrink-0 border-r bg-card flex flex-col min-h-screen relative z-10 transition-transform">
@@ -44,7 +44,7 @@ export function AdminSidebar() {
       </div>
 
       <nav className="flex-1 space-y-2 p-4">
-        {hostelId && (
+        {hostelSlug && (
           <div className="mb-6">
             <Link href="/hostels" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "w-full justify-start text-muted-foreground mb-2")}>
               <ChevronLeft className="mr-2 h-4 w-4" />

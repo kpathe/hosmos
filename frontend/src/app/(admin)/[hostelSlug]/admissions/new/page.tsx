@@ -39,7 +39,7 @@ const admissionSchema = z.object({
 
 export default function NewAdmissionPage() {
   const params = useParams();
-  const hostelId = params.hostelId as string;
+  const hostelSlug = params.hostelSlug as string;
   const router = useRouter();
   const { toast } = useToast();
   
@@ -47,8 +47,8 @@ export default function NewAdmissionPage() {
 
   // Fetch rooms for room selection
   const { data: roomsResponse, isLoading: isLoadingRooms } = useQuery({
-    queryKey: ["rooms", hostelId],
-    queryFn: () => apiClient.getList<RoomDto>("/rooms", { "x-hostel-id": hostelId }),
+    queryKey: ["rooms", hostelSlug],
+    queryFn: () => apiClient.getList<RoomDto>("/rooms", { "x-hostel-slug": hostelSlug }),
   });
 
   const rooms = roomsResponse?.data || [];
@@ -88,7 +88,7 @@ export default function NewAdmissionPage() {
     mutationFn: (data: any) => apiClient.post<CreateAdmissionRequest, AdmissionResultDto>("/admissions", {
       ...data,
       security_deposit_amount_paise: Math.round(data.security_deposit_amount_rupees * 100)
-    }, { "x-hostel-id": hostelId }),
+    }, { "x-hostel-slug": hostelSlug }),
     onSuccess: (res) => {
       toast({ title: "Admission Successful", description: "Hosteller has been admitted and billed." });
       setSuccessResult(res);
@@ -138,7 +138,7 @@ export default function NewAdmissionPage() {
               setSuccessResult(null);
               form.reset();
             }}>Admit Another</Button>
-            <Button onClick={() => router.push(`/${hostelId}/dashboard`)}>Go to Dashboard</Button>
+            <Button onClick={() => router.push(`/${hostelSlug}/dashboard`)}>Go to Dashboard</Button>
           </CardFooter>
         </Card>
       </div>
@@ -148,7 +148,7 @@ export default function NewAdmissionPage() {
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500 max-w-4xl mx-auto pb-20">
       <div className="flex items-center gap-4">
-        <Link href={`/${hostelId}/dashboard`}>
+        <Link href={`/${hostelSlug}/dashboard`}>
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>

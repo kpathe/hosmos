@@ -127,7 +127,7 @@ export default function CreateHostelPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="late_fine_amount_rupees">Late Fine/Day (₹)</Label>
+                  <Label htmlFor="late_fine_amount_rupees">Late Fine/Month (₹)</Label>
                   <Input id="late_fine_amount_rupees" type="number" {...form.register("late_fine_amount_rupees")} />
                   {form.formState.errors.late_fine_amount_rupees && (
                     <p className="text-sm text-destructive">{form.formState.errors.late_fine_amount_rupees.message}</p>

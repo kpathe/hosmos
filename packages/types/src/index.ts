@@ -95,6 +95,7 @@ export interface ChangePasswordRequest {
 
 export interface HostelDto {
   id: string;
+  slug: string;
   name: string;
   address: string | null;
   electricity_rate_paise: number;
@@ -104,6 +105,7 @@ export interface HostelDto {
 }
 
 export interface CreateHostelRequest {
+  slug?: string;
   name: string;
   address?: string;
   electricity_rate_paise?: number;
@@ -112,6 +114,7 @@ export interface CreateHostelRequest {
 }
 
 export interface UpdateHostelRequest {
+  slug?: string;
   name?: string;
   address?: string;
   electricity_rate_paise?: number;

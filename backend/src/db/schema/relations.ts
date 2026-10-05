@@ -80,7 +80,7 @@ export const roomOccupanciesRelations = relations(roomOccupancies, ({ one }) => 
   hostel: one(hostels, { fields: [roomOccupancies.hostelId], references: [hostels.id] }),
   room: one(rooms, { fields: [roomOccupancies.roomId], references: [rooms.id] }),
   hosteller: one(hostellers, {
-    fields: [roomOccupancies.hostelerId],   // hostelerId (not hostellerId) — schema column name
+    fields: [roomOccupancies.hostellerId],   // hostellerId (not hostellerId) — schema column name
     references: [hostellers.id],
   }),
 }));
@@ -90,7 +90,7 @@ export const roomOccupanciesRelations = relations(roomOccupancies, ({ one }) => 
 export const billsRelations = relations(bills, ({ one, many }) => ({
   hostel: one(hostels, { fields: [bills.hostelId], references: [hostels.id] }),
   hosteller: one(hostellers, {
-    fields: [bills.hostelerId],             // hostelerId (schema column name)
+    fields: [bills.hostellerId],             // hostellerId (schema column name)
     references: [hostellers.id],
   }),
   billItems: many(billItems),
@@ -109,7 +109,7 @@ export const billItemsRelations = relations(billItems, ({ one }) => ({
 export const paymentsRelations = relations(payments, ({ one }) => ({
   hostel: one(hostels, { fields: [payments.hostelId], references: [hostels.id] }),
   hosteller: one(hostellers, {
-    fields: [payments.hostelerId],          // hostelerId (schema column name)
+    fields: [payments.hostellerId],          // hostellerId (schema column name)
     references: [hostellers.id],
   }),
   bill: one(bills, { fields: [payments.billId], references: [bills.id] }),
@@ -120,7 +120,7 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
 export const securityDepositsRelations = relations(securityDeposits, ({ one }) => ({
   hostel: one(hostels, { fields: [securityDeposits.hostelId], references: [hostels.id] }),
   hosteller: one(hostellers, {
-    fields: [securityDeposits.hostelerId],  // hostelerId (schema column name)
+    fields: [securityDeposits.hostellerId],  // hostellerId (schema column name)
     references: [hostellers.id],
   }),
 }));
