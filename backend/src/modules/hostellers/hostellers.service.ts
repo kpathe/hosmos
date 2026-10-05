@@ -171,7 +171,7 @@ class HostellersService {
       address: record.address,
       admission_date: record.admissionDate,
       status: record.status,
-      username: record.username,
+      name_slug: record.nameSlug,
       created_at: record.createdAt.toISOString(),
     };
   }

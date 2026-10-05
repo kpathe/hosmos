@@ -17,7 +17,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 
 const registerHostellerSchema = z.object({
   email: z.string().email("Invalid email address"),
-  username: z.string().min(3, "Username must be at least 3 characters").max(50),
   password_plain: z.string().min(8, "Password must be at least 8 characters"),
   confirm_password: z.string().min(8, "Confirm password is required"),
 }).refine((data) => data.password_plain === data.confirm_password, {
@@ -36,7 +35,7 @@ export default function RegisterPage() {
   
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerHostellerSchema),
-    defaultValues: { email: "", username: "", password_plain: "", confirm_password: "" },
+    defaultValues: { email: "", password_plain: "", confirm_password: "" },
   });
 
   const onSubmit = async (data: RegisterFormData) => {
@@ -44,7 +43,6 @@ export default function RegisterPage() {
     try {
       const payload: RegisterHostellerRequest = {
         email: data.email,
-        username: data.username,
         password_plain: data.password_plain,
       };
 
@@ -96,14 +94,7 @@ export default function RegisterPage() {
                     <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
                   )}
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="username">Choose a Username</Label>
-                  <Input id="username" {...form.register("username")} placeholder="johndoe99" />
-                  {form.formState.errors.username && (
-                    <p className="text-xs text-destructive">{form.formState.errors.username.message}</p>
-                  )}
-                </div>
+
 
                 <div className="space-y-2">
                   <Label htmlFor="password_plain">Password</Label>

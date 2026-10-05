@@ -76,7 +76,7 @@ export const hostellers = pgTable(
      * Chosen username — set during portal registration.
      * Globally unique across all hostellers.
      */
-    username: text("username").unique(),
+    nameSlug: text("name_slug").unique(),
 
     /**
      * bcrypt hash of portal password.
@@ -94,7 +94,7 @@ export const hostellers = pgTable(
     index("idx_hostellers_hostel_id").on(t.hostelId),
     index("idx_hostellers_email").on(t.email),
     index("idx_hostellers_status").on(t.status),
-    index("idx_hostellers_username").on(t.username),
+    index("idx_hostellers_name_slug").on(t.nameSlug),
   ]
 );
 

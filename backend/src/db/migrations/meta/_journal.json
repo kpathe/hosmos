@@ -15,6 +15,13 @@
       "when": 1791211341895,
       "tag": "0001_famous_master_chief",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791213330248,
+      "tag": "0002_robust_lockjaw",
+      "breakpoints": true
     }
   ]
 }

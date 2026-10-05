@@ -82,7 +82,6 @@ export interface LoginHostellerRequest {
 
 export interface RegisterHostellerRequest {
   email: string; // Used to look up the admitted record
-  username: string;
   password_plain: string;
 }
 
@@ -228,7 +227,7 @@ export interface HostellerDto {
   address: string | null;
   admission_date: string;
   status: HostellerStatus;
-  username: string | null;
+  name_slug: string | null;
   created_at: string;
 }
 

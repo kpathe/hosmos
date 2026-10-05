@@ -121,7 +121,7 @@ export const authService = {
       .where(
         or(
           eq(hostellers.email, input.identifier),
-          eq(hostellers.username, input.identifier)
+          eq(hostellers.nameSlug, input.identifier)
         )
       );
 
@@ -168,22 +168,12 @@ export const authService = {
       throw new AuthenticationError("Account is already registered or inactive");
     }
 
-    // Check if username is taken
-    const [existing] = await db
-      .select({ id: hostellers.id })
-      .from(hostellers)
-      .where(eq(hostellers.username, input.username));
-      
-    if (existing) {
-      throw new ValidationError("Username is already taken");
-    }
 
     const passwordHash = await hashPassword(input.password_plain);
 
     await db
       .update(hostellers)
       .set({
-        username: input.username,
         passwordHash,
         status: "active",
         updatedAt: new Date(),

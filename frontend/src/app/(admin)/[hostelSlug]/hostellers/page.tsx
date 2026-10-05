@@ -65,7 +65,7 @@ export default function HostellersPage() {
                     <TableRow
                       key={hosteller.id}
                       className="hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => router.push(`/${hostelSlug}/hostellers/${hosteller.username || hosteller.id}`)}
+                      onClick={() => router.push(`/${hostelSlug}/hostellers/${hosteller.name_slug || hosteller.id}`)}
                     >
                       <TableCell className="font-medium">
                         <div className="hover:text-primary transition-colors">

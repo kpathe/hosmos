@@ -82,7 +82,7 @@ export class AdmissionsService {
         aadhaarNumberEncrypted: payload.aadhaar_number || null, // Real app: encrypt this!
         admissionDate: payload.admission_date,
         status: "admitted",
-        username: payload?.username || `${payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}-${randomUUID().split('-')[0]}`,
+        nameSlug: `${payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}-${randomUUID().split('-')[0]}`,
         createdBy,
       }).returning();
       
@@ -212,7 +212,7 @@ export class AdmissionsService {
           address: hosteller.address,
           admission_date: hosteller.admissionDate,
           status: hosteller.status,
-          username: hosteller.username,
+          name_slug: hosteller.nameSlug,
           created_at: hosteller.createdAt.toISOString()
         } as any,
         room: {
