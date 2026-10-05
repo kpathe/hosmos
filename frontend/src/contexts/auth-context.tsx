@@ -55,7 +55,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 let _restorePromise: Promise<{ access_token: string; user: AuthUser } | null> | null = null;
 
-async function silentRefresh(): Promise<{ access_token: string; user: AuthUser } | null> {
+export async function silentRefresh(): Promise<{ access_token: string; user: AuthUser } | null> {
   if (_restorePromise) return _restorePromise;
 
   _restorePromise = (async () => {

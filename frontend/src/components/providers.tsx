@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode, useEffect } from "react";
-import { AuthProvider, useAuth } from "@/contexts/auth-context";
+import { AuthProvider, useAuth, silentRefresh } from "@/contexts/auth-context";
 import { configureApiClient } from "@/lib/api-client";
 import { useRef } from "react";
 
@@ -23,24 +23,13 @@ function ApiClientConfigurator() {
 
       // Token refresher — called on 401
       async () => {
-        try {
-          const res = await fetch("/api/auth/refresh", {
-            method: "POST",
-            credentials: "include",
-          });
-          if (!res.ok) return null;
-
-          const data = (await res.json()) as {
-            data: { access_token: string };
-          };
-
-          const newToken = data.data.access_token;
-          // setAccessToken calls setModuleToken internally (auth-context.tsx)
-          authRef.current.setAccessToken(newToken);
-          return newToken;
-        } catch {
-          return null;
-        }
+        const data = await silentRefresh();
+        if (!data) return null;
+        
+        const newToken = data.access_token;
+        // setAccessToken calls setModuleToken internally (auth-context.tsx)
+        authRef.current.setAccessToken(newToken);
+        return newToken;
       }
     );
   // Only configure once on mount

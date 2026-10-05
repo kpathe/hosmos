@@ -27,7 +27,7 @@ const pool = new pg.Pool({
   max: env.NODE_ENV === "production" ? 3 : 1,   // keep it small for serverless
   min: 0,                                         // don't hold connections when idle
   idleTimeoutMillis: 20_000,                      // evict idle connections after 20s
-  connectionTimeoutMillis: 10_000,                // fail fast if Neon is sleeping
+  connectionTimeoutMillis: 30_000,                // Give Neon up to 30s to wake from scale-to-zero
   ssl: { rejectUnauthorized: false },
 });
 

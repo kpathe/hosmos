@@ -39,14 +39,15 @@ interface TokenIssueResult {
 async function issueTokens(
   userId: string,
   userType: UserRole,
-  hostelId?: string
+  hostelId?: string,
+  dbClient: any = db
 ): Promise<TokenIssueResult> {
   const rawRefreshToken = generateRefreshToken();
   const tokenHash = hashRefreshToken(rawRefreshToken);
   const expiresAt = new Date(Date.now() + env.JWT_REFRESH_EXPIRY_SECONDS * 1000);
 
   // Store refresh token
-  await db.insert(refreshTokens).values({
+  await dbClient.insert(refreshTokens).values({
     userId,
     userType,
     tokenHash,
@@ -219,7 +220,7 @@ export const authService = {
         .where(eq(refreshTokens.id, tokenRecord.id));
 
       // Issue new tokens
-      const newTokens = await issueTokens(tokenRecord.userId, tokenRecord.userType);
+      const newTokens = await issueTokens(tokenRecord.userId, tokenRecord.userType, undefined, tx);
 
       // Get user data for response
       let user: LoginResponse["user"] | null = null;
