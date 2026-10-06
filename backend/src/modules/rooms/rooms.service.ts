@@ -114,19 +114,34 @@ export class RoomsService {
       throw new NotFoundError("Room not found");
     }
 
+    if (payload.pricing_model_id !== undefined) {
+      const activeOccupants = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(roomOccupancies)
+        .where(
+          and(
+            eq(roomOccupancies.roomId, id),
+            sql`${roomOccupancies.effectiveTo} IS NULL OR ${roomOccupancies.effectiveTo} > NOW()`
+          )
+        );
+
+      if ((activeOccupants[0]?.count ?? 0) > 0) {
+        throw new ValidationError("Cannot change pricing model for a room with active occupants.");
+      }
+    }
+
     const updates: any = {};
-    if (payload.room_number !== undefined) updates.roomNumber = payload.room_number;
-    if (payload.floor !== undefined) updates.floor = payload.floor;
-    if (payload.capacity !== undefined) updates.capacity = payload.capacity;
     if (payload.pricing_model_id !== undefined) updates.pricingModelId = payload.pricing_model_id;
 
-    const [updatedRecord] = await db
-      .update(rooms)
-      .set(updates)
-      .where(eq(rooms.id, id))
-      .returning();
+    if (Object.keys(updates).length > 0) {
+      await db
+        .update(rooms)
+        .set(updates)
+        .where(eq(rooms.id, id));
+    }
 
-    return mapRoomToDto(updatedRecord!);
+    const roomRecords = await this.getRoomsByHostel(hostelId);
+    return roomRecords.find(r => r.id === id)!;
   }
 
   async deleteRoom(id: string, hostelId: string): Promise<void> {

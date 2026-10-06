@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { CreditCard, Plus, Loader2, Edit } from "lucide-react";
+import { CreditCard, Plus, Loader2, Edit, Trash2 } from "lucide-react";
 
 const pricingSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -34,6 +34,10 @@ export default function PricingModelsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingPricing, setEditingPricing] = useState<PricingModelDto | null>(null);
+  const [pricingToDelete, setPricingToDelete] = useState<PricingModelDto | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [editPriceRupees, setEditPriceRupees] = useState<number>(0);
 
   const { data: response, isLoading } = useQuery({
     queryKey: ["pricing", hostelSlug],
@@ -49,6 +53,30 @@ export default function PricingModelsPage() {
       charging_basis: "PER_SEAT",
       monthly_amount_rupees: 5000, // 5000 INR
       compatible_capacity: 2,
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { id: string, monthly_amount_paise: number }) => 
+      apiClient.put(`/pricing/${data.id}`, { monthly_amount_paise: data.monthly_amount_paise }, { "x-hostel-slug": hostelSlug }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pricing", hostelSlug] });
+      toast({ title: "Success", description: "Pricing updated successfully." });
+      setEditingPricing(null);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update pricing.", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/pricing/${id}`, { "x-hostel-slug": hostelSlug }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pricing", hostelSlug] });
+      toast({ title: "Success", description: "Pricing model deleted successfully." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete pricing model.", variant: "destructive" });
     },
   });
 
@@ -178,9 +206,23 @@ export default function PricingModelsPage() {
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          onClick={() => toast({ title: "Info", description: "Editing pricing models is coming soon." })}
+                          onClick={() => {
+                            setEditingPricing(pm);
+                            setEditPriceRupees(pm.monthly_amount_paise / 100);
+                          }}
                         >
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => {
+                            setPricingToDelete(pm);
+                            setDeleteConfirmText("");
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -191,6 +233,82 @@ export default function PricingModelsPage() {
           )}
         </CardContent>
       </Card>
+
+        {/* Edit Pricing Dialog */}
+        <Dialog open={!!editingPricing} onOpenChange={(open) => !open && setEditingPricing(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Pricing: {editingPricing?.name}</DialogTitle>
+              <DialogDescription>
+                Only the price can be edited for an existing pricing model.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Monthly Rent (₹)</Label>
+                <Input 
+                  type="number"
+                  value={editPriceRupees}
+                  onChange={(e) => setEditPriceRupees(Number(e.target.value))}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditingPricing(null)}>Cancel</Button>
+              <Button 
+                onClick={() => {
+                  if (editingPricing) {
+                    updateMutation.mutate({ 
+                      id: editingPricing.id, 
+                      monthly_amount_paise: Math.round(editPriceRupees * 100)
+                    });
+                  }
+                }}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Pricing Dialog */}
+        <Dialog open={!!pricingToDelete} onOpenChange={(open) => !open && setPricingToDelete(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Pricing Model</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete {pricingToDelete?.name}?
+                To confirm, please type <strong>DELETE</strong> below.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input 
+                value={deleteConfirmText} 
+                onChange={(e) => setDeleteConfirmText(e.target.value)} 
+                placeholder="Type DELETE to confirm" 
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setPricingToDelete(null)}>Cancel</Button>
+              <Button 
+                variant="destructive"
+                disabled={deleteConfirmText !== "DELETE" || deleteMutation.isPending}
+                onClick={() => {
+                  if (pricingToDelete) {
+                    deleteMutation.mutate(pricingToDelete.id, {
+                      onSuccess: () => setPricingToDelete(null)
+                    });
+                  }
+                }}
+              >
+                {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Delete Model
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }

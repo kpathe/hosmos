@@ -188,6 +188,18 @@ export const apiClient = {
   },
 
   /**
+   * PUT request
+   */
+  async put<TBody, TResponse>(path: string, body: TBody, customHeaders?: Record<string, string>): Promise<TResponse> {
+    const res = await apiFetch<ApiSuccessResponse<TResponse>>(path, {
+      method: "PUT",
+      body: JSON.stringify(body),
+      headers: customHeaders,
+    });
+    return res.data;
+  },
+
+  /**
    * DELETE request
    */
   async delete<TResponse>(path: string, customHeaders?: Record<string, string>): Promise<TResponse> {

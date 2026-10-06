@@ -63,6 +63,35 @@ class HostellersController {
       next(error);
     }
   }
+
+  async changeRoom(req: Request<{ id: string }, {}, { room_id: string }>, res: Response, next: NextFunction) {
+    try {
+      const hostelId = req.headers["x-hostel-id"] as string;
+      if (!hostelId) throw new Error("x-hostel-id header is required");
+
+      const id = req.params.id as string;
+      const { room_id } = req.body;
+      
+      await hostellersService.changeRoom(id, hostelId, room_id);
+      res.status(200).json({ data: { success: true } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteHosteller(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+    try {
+      const hostelId = req.headers["x-hostel-id"] as string;
+      if (!hostelId) throw new Error("x-hostel-id header is required");
+
+      const id = req.params.id as string;
+      await hostellersService.deleteHosteller(id, hostelId);
+      
+      res.status(200).json({ data: { success: true } });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const hostellersController = new HostellersController();

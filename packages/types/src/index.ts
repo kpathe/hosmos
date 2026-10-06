@@ -41,7 +41,7 @@ export interface ApiErrorResponse {
   error: {
     code: string;
     message: string;
-    details?: Record<string, string[]> | unknown;
+    details?: Record<string, any>;
   };
 }
 
@@ -296,6 +296,27 @@ export interface BillDto {
   paid_at: string | null;
 }
 
+export interface GenerateBillsRequest {
+  year: number;
+  month: number;
+}
+
+export interface GenerateBillsResponse {
+  billsCreated: number;
+  billsSkipped: number;
+}
+
+export interface AddBillItemRequest {
+  item_type: BillItemType;
+  description: string;
+  amount_paise: number;
+}
+
+export interface UpdateBillItemRequest {
+  description?: string;
+  amount_paise?: number;
+}
+
 // ─── Payment ──────────────────────────────────────────────────────────────────
 
 export interface PaymentDto {
@@ -311,6 +332,16 @@ export interface PaymentDto {
   description: string | null;
   reference: string | null;
   created_at: string;
+}
+
+export interface RecordPaymentRequest {
+  hosteller_id: string;
+  bill_id: string;
+  payment_date: string;
+  amount_paise: number;
+  mode: PaymentMode;
+  description?: string;
+  reference?: string;
 }
 
 // ─── Advance Rent Allocation ──────────────────────────────────────────────────

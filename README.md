@@ -101,11 +101,11 @@ npm run dev:frontend
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Project setup, schema, utilities, layout shells | ✅ Complete |
-| 1 | Authentication & authorization | ⬜ Next |
-| 2 | Hostel / Owner / Manager foundation | ⬜ |
-| 3 | Rooms and pricing models | ⬜ |
-| 4 | Hosteller admission | ⬜ |
-| 5 | Billing and advance rent | ⬜ |
+| 1 | Authentication & authorization | ✅ Complete |
+| 2 | Hostel / Owner / Manager foundation | ✅ Complete |
+| 3 | Rooms and pricing models | ✅ Complete |
+| 4 | Hosteller admission | ✅ Complete |
+| 5 | Billing and advance rent | ⬜ Next |
 | 6 | Payments | ⬜ |
 | 7 | Meter readings and electricity billing | ⬜ |
 | 8 | Hosteller portal | ⬜ |

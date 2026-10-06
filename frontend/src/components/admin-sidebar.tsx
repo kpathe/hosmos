@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Building, LayoutDashboard, Settings, LogOut, Users, Bed, CreditCard, ChevronLeft, UserPlus } from "lucide-react";
+import { Building, LayoutDashboard, Settings, LogOut, Users, Bed, CreditCard, ChevronLeft, UserPlus, Receipt, IndianRupee } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,8 @@ export function AdminSidebar() {
     { href: `/${hostelSlug}/pricing`, label: "Pricing Models", icon: CreditCard },
     { href: `/${hostelSlug}/managers`, label: "Managers", icon: Users },
     { href: `/${hostelSlug}/hostellers`, label: "Hostellers", icon: Users },
+    { href: `/${hostelSlug}/billing`, label: "Billing", icon: Receipt },
+    { href: `/${hostelSlug}/payments`, label: "Payments", icon: IndianRupee },
   ];
 
   const links = hostelSlug ? hostelLinks : globalLinks;

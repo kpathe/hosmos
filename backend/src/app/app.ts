@@ -12,6 +12,9 @@ import { roomsRouter } from "../modules/rooms/rooms.routes.js";
 import { managersRouter } from "../modules/managers/managers.routes.js";
 import { admissionsRouter } from "../modules/admissions/admissions.routes.js";
 import { hostellersRouter } from "../modules/hostellers/hostellers.routes.js";
+import { billingRouter } from "../modules/billing/billing.routes.js";
+import { paymentsRouter } from "../modules/payments/payments.routes.js";
+import { metersRouter } from "../modules/meters/meters.routes.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Express Application Factory
@@ -59,6 +62,9 @@ export function createApp(): express.Application {
   app.use("/api/v1/managers", managersRouter);
   app.use("/api/v1/admissions", admissionsRouter);
   app.use("/api/v1/hostellers", hostellersRouter);
+  app.use("/api/v1/billing", billingRouter);
+  app.use("/api/v1/payments", paymentsRouter);
+  app.use("/api/v1/meters", metersRouter);
   //
   // import { adminRouter } from "../modules/admin/admin.routes.js";
   // app.use("/api/v1/admin", adminRouter);

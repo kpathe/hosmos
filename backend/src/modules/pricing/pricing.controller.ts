@@ -67,6 +67,20 @@ export class PricingController {
       next(error);
     }
   }
+
+  async deletePricingModel(req: Request<{ id: string }>, res: Response<ApiSuccessResponse<{ success: boolean }>>, next: NextFunction) {
+    try {
+      const hostelId = req.headers["x-hostel-id"] as string;
+      if (!hostelId) throw new ValidationError("x-hostel-id header is required");
+
+      const id = req.params.id as string;
+      await pricingService.deletePricingModel(id, hostelId);
+      
+      res.status(200).json({ data: { success: true } });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const pricingController = new PricingController();

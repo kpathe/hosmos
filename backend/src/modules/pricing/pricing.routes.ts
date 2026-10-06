@@ -35,4 +35,10 @@ router.get(
   pricingController.getPricingModelById.bind(pricingController)
 );
 
+router.delete(
+  "/:id",
+  requireRole(["owner"]),
+  pricingController.deletePricingModel.bind(pricingController)
+);
+
 export { router as pricingRouter };

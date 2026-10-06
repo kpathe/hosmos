@@ -27,4 +27,17 @@ router.get(
   hostellersController.getHostellerById.bind(hostellersController)
 );
 
+
+router.put(
+  "/:id/room",
+  requireRole(["owner"]),
+  hostellersController.changeRoom.bind(hostellersController)
+);
+
+router.delete(
+  "/:id",
+  requireRole(["owner"]),
+  hostellersController.deleteHosteller.bind(hostellersController)
+);
+
 export { router as hostellersRouter };

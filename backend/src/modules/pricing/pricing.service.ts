@@ -73,12 +73,9 @@ export class PricingService {
     }
 
     const updates: any = {};
-    if (payload.name !== undefined) updates.name = payload.name;
-    if (payload.charging_basis !== undefined) updates.chargingBasis = payload.charging_basis;
-    if (payload.monthly_amount_paise !== undefined) updates.monthlyAmountPaise = payload.monthly_amount_paise;
-    if (payload.compatible_capacity !== undefined) updates.compatibleCapacity = payload.compatible_capacity;
-    if (payload.compatible_floors !== undefined) updates.compatibleFloors = payload.compatible_floors;
-    if (payload.is_active !== undefined) updates.isActive = payload.is_active;
+    if (payload.monthly_amount_paise !== undefined) {
+      updates.monthlyAmountPaise = payload.monthly_amount_paise;
+    }
     updates.updatedAt = new Date();
 
     const [updatedRecord] = await db
@@ -88,6 +85,17 @@ export class PricingService {
       .returning();
 
     return mapPricingModelToDto(updatedRecord!);
+  }
+
+  async deletePricingModel(id: string, hostelId: string): Promise<void> {
+    const [deleted] = await db
+      .delete(pricingModels)
+      .where(and(eq(pricingModels.id, id), eq(pricingModels.hostelId, hostelId)))
+      .returning();
+      
+    if (!deleted) {
+      throw new NotFoundError("Pricing model not found or unauthorized");
+    }
   }
 }
 

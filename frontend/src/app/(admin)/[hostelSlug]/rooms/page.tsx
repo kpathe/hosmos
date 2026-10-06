@@ -35,6 +35,9 @@ export default function RoomsPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<RoomDto | null>(null);
+  const [roomToDelete, setRoomToDelete] = useState<RoomDto | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const { data: roomsResponse, isLoading: isLoadingRooms } = useQuery({
     queryKey: ["rooms", hostelSlug],
@@ -56,6 +59,19 @@ export default function RoomsPage() {
       floor: "Ground",
       capacity: 2,
       pricing_model_id: "none",
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { id: string, pricing_model_id: string | undefined }) => 
+      apiClient.put(`/rooms/${data.id}`, { pricing_model_id: data.pricing_model_id }, { "x-hostel-slug": hostelSlug }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rooms", hostelSlug] });
+      toast({ title: "Success", description: "Room updated successfully." });
+      setEditingRoom(null);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update room.", variant: "destructive" });
     },
   });
 
@@ -226,7 +242,7 @@ export default function RoomsPage() {
                             size="icon" 
                             onClick={(e) => {
                               e.stopPropagation();
-                              router.push(`/${hostelSlug}/rooms/${room.id}`);
+                              setEditingRoom(room);
                             }}
                           >
                             <Edit className="h-4 w-4" />
@@ -237,9 +253,8 @@ export default function RoomsPage() {
                             className="text-destructive hover:text-destructive"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (confirm("Are you sure you want to delete this room?")) {
-                                deleteMutation.mutate(room.id);
-                              }
+                              setRoomToDelete(room);
+                              setDeleteConfirmText("");
                             }}
                             disabled={deleteMutation.isPending}
                           >
@@ -255,6 +270,91 @@ export default function RoomsPage() {
           )}
         </CardContent>
       </Card>
+
+        {/* Edit Room Dialog */}
+        <Dialog open={!!editingRoom} onOpenChange={(open) => !open && setEditingRoom(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Room: {editingRoom?.room_number}</DialogTitle>
+              <DialogDescription>
+                Only the pricing model can be edited, and only when there are no occupants.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Pricing Model</Label>
+                <Select 
+                  value={editingRoom?.pricing_model_id || "none"}
+                  onValueChange={(val) => setEditingRoom(editingRoom ? { ...editingRoom, pricing_model_id: val === "none" ? null : val } : null)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select pricing model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Pricing Model</SelectItem>
+                    {pricingModels.map((pm) => (
+                      <SelectItem key={pm.id} value={pm.id}>{pm.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditingRoom(null)}>Cancel</Button>
+              <Button 
+                onClick={() => {
+                  if (editingRoom) {
+                    updateMutation.mutate({ 
+                      id: editingRoom.id, 
+                      pricing_model_id: editingRoom.pricing_model_id === "none" ? undefined : (editingRoom.pricing_model_id || undefined)
+                    });
+                  }
+                }}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Room Dialog */}
+        <Dialog open={!!roomToDelete} onOpenChange={(open) => !open && setRoomToDelete(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Room</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete room {roomToDelete?.room_number}?
+                To confirm, please type <strong>DELETE</strong> below.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input 
+                value={deleteConfirmText} 
+                onChange={(e) => setDeleteConfirmText(e.target.value)} 
+                placeholder="Type DELETE to confirm" 
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setRoomToDelete(null)}>Cancel</Button>
+              <Button 
+                variant="destructive"
+                disabled={deleteConfirmText !== "DELETE" || deleteMutation.isPending}
+                onClick={() => {
+                  if (roomToDelete) {
+                    deleteMutation.mutate(roomToDelete.id, {
+                      onSuccess: () => setRoomToDelete(null)
+                    });
+                  }
+                }}
+              >
+                {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Delete Room
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }

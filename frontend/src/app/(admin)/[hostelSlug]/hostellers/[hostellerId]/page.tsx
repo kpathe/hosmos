@@ -1,10 +1,17 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "next/navigation";
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { apiClient } from "@/lib/api-client";
-import type { HostellerDetailsDto } from "@hosmos/types";
+import { useToast } from "@/hooks/use-toast";
+import type { HostellerDetailsDto, RoomDto } from "@hosmos/types";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -52,6 +59,76 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="text-sm font-medium">{value}</p>
       </div>
+
+      {/* Change Room Dialog */}
+      <Dialog open={isChangeRoomOpen} onOpenChange={setIsChangeRoomOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Room</DialogTitle>
+            <DialogDescription>
+              Assign the hosteller to a new room. This will close their current occupancy and start a new one.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select New Room</Label>
+              <Select value={newRoomId} onValueChange={setNewRoomId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a room" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roomsList.map((r: RoomDto) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.room_number} (Floor {r.floor}, {r.capacity} Beds)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsChangeRoomOpen(false)}>Cancel</Button>
+            <Button 
+              disabled={!newRoomId || changeRoomMutation.isPending}
+              onClick={() => changeRoomMutation.mutate(newRoomId)}
+            >
+              {changeRoomMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Hosteller Dialog */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Hosteller</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete {hosteller?.name}? This will remove all their records including bills and payments.
+              To confirm, please type <strong>DELETE</strong> below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input 
+              value={deleteConfirmText} 
+              onChange={(e) => setDeleteConfirmText(e.target.value)} 
+              placeholder="Type DELETE to confirm" 
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+            <Button 
+              variant="destructive"
+              disabled={deleteConfirmText !== "DELETE" || deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate()}
+            >
+              {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete Hosteller
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -70,6 +147,46 @@ export default function HostellerDetailPage() {
   });
 
   const details = response;
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  
+  const [isChangeRoomOpen, setIsChangeRoomOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [newRoomId, setNewRoomId] = useState("");
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
+  const { data: roomsResponse } = useQuery({
+    queryKey: ["rooms", hostelSlug],
+    queryFn: () => apiClient.getList<RoomDto>("/rooms", { "x-hostel-slug": hostelSlug }),
+  });
+  const roomsList = roomsResponse?.data || [];
+
+  const changeRoomMutation = useMutation({
+    mutationFn: (roomId: string) => apiClient.put(`/hostellers/${hostellerId}/room`, { room_id: roomId }, { "x-hostel-slug": hostelSlug }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hosteller-details", hostellerId] });
+      toast({ title: "Success", description: "Occupancy changed successfully." });
+      setIsChangeRoomOpen(false);
+      setNewRoomId("");
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to change room.", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => apiClient.delete(`/hostellers/${hostellerId}`, { "x-hostel-slug": hostelSlug }),
+    onSuccess: () => {
+      toast({ title: "Success", description: "Hosteller deleted successfully." });
+      router.push(`/${hostelSlug}/hostellers`);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete hosteller.", variant: "destructive" });
+    },
+  });
+
 
   if (isLoading) {
     return (
