@@ -2,14 +2,12 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Building, LayoutDashboard, Settings, LogOut, Users, Bed, CreditCard, ChevronLeft, Receipt, IndianRupee, Zap, BookOpen, UserMinus } from "lucide-react";
-import { useAuth } from "@/contexts/auth-context";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Building, LayoutDashboard, Settings, Users, Bed, CreditCard, ChevronLeft, Receipt, IndianRupee, Zap, BookOpen, UserMinus } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const { logout } = useAuth();
   
   const pathSegments = pathname.split("/").filter(Boolean);
   const firstSegment = pathSegments[0] || "";
@@ -41,22 +39,42 @@ export function AdminSidebar() {
   const links = hostelSlug ? hostelLinks : globalLinks;
 
   return (
-    <aside className="w-64 shrink-0 border-r bg-card flex flex-col min-h-screen relative z-10 transition-transform">
-      <div className="flex h-16 items-center border-b px-6">
-        <Link href="/dashboard" className="text-xl font-bold tracking-tight text-primary flex items-center gap-2">
-          <Building className="h-6 w-6" />
-          Hosmos
+    <aside className="w-64 shrink-0 border-r bg-card flex flex-col h-screen max-h-screen sticky top-0 z-20">
+      {/* Brand logo header with ample padding */}
+      <div className="flex h-16 shrink-0 items-center border-b px-6">
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-3 transition-opacity hover:opacity-90"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Building className="h-5 w-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-base font-bold tracking-tight text-foreground leading-tight">
+              Hosmos
+            </span>
+            <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+              Hostel OS
+            </span>
+          </div>
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-2 p-4">
+      {/* Scrollable navigation area — sidebar has its own scrollbar */}
+      <nav className="flex-1 overflow-y-auto space-y-1.5 p-4 custom-scrollbar">
         {hostelSlug && (
-          <div className="mb-6">
-            <Link href="/hostels" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "w-full justify-start text-muted-foreground mb-2")}>
+          <div className="mb-4">
+            <Link
+              href="/hostels"
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "sm" }),
+                "w-full justify-start text-muted-foreground mb-2"
+              )}
+            >
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back to Hostels
             </Link>
-            <div className="px-2 pb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="px-2 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Hostel Management
             </div>
           </div>
@@ -71,24 +89,17 @@ export function AdminSidebar() {
               href={link.href}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                isActive 
-                  ? "bg-primary text-primary-foreground" 
+                isActive
+                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-4 w-4 shrink-0" />
               {link.label}
             </Link>
           );
         })}
       </nav>
-
-      <div className="border-t p-4 mt-auto">
-        <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground" onClick={() => logout()}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Log out
-        </Button>
-      </div>
     </aside>
   );
 }

@@ -24,11 +24,18 @@ function LoadingScreen() {
   return (
     <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-background">
       <div className="relative flex h-16 w-16 items-center justify-center">
-        {/* Outer ring */}
-        <div className="absolute inset-0 rounded-full border-4 border-muted" />
-        {/* Spinning accent ring */}
-        <div className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-primary" />
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        {/* Outer track */}
+        <div className="absolute inset-0 rounded-full border-4 border-muted/50" />
+        {/* Outer accent ring - rotates clockwise smoothly */}
+        <div
+          className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary"
+          style={{ animation: "spin 1s linear infinite" }}
+        />
+        {/* Inner icon spinner - rotates counter-clockwise at a distinct speed */}
+        <Loader2
+          className="h-7 w-7 text-primary"
+          style={{ animation: "spin 1.2s linear infinite reverse" }}
+        />
       </div>
       <p className="text-sm font-medium text-muted-foreground animate-pulse">
         Restoring session…

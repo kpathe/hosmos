@@ -58,13 +58,13 @@ export default function AdminLayout({
 }) {
   return (
     <AuthGuard allowedRoles={["owner", "manager"]}>
-      <div className="flex h-full min-h-screen">
+      <div className="flex h-screen w-screen overflow-hidden bg-background">
         <AdminSidebar />
 
         {/* Main content */}
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col h-screen overflow-hidden min-w-0">
           <AdminTopBar />
-          <main className="flex-1 overflow-auto p-6 bg-muted/20">{children}</main>
+          <main className="flex-1 overflow-y-auto p-6 bg-muted/20">{children}</main>
         </div>
       </div>
     </AuthGuard>
