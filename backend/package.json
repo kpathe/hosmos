@@ -5,7 +5,7 @@
   "description": "Hosmos Backend — Node.js + TypeScript + Express + Drizzle ORM",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server/server.ts",
+    "dev": "tsx --dns-result-order=ipv4first watch src/server/server.ts",
     "build": "tsc",
     "start": "node dist/server/server.js",
     "lint": "eslint src --ext .ts",

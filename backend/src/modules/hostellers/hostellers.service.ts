@@ -5,6 +5,7 @@ import { roomOccupancies } from "../../db/schema/room-occupancies.js";
 import { bills, billItems } from "../../db/schema/bills.js";
 import { payments } from "../../db/schema/payments.js";
 import { securityDeposits } from "../../db/schema/security-deposits.js";
+import { advanceRentAllocations } from "../../db/schema/advance-rent-allocations.js";
 import { rooms } from "../../db/schema/rooms.js";
 import type { HostellerDto, BillDto, PaymentDto, SecurityDepositDto, RoomOccupancyDto } from "@hosmos/types";
 
@@ -199,25 +200,29 @@ class HostellersService {
 
   async deleteHosteller(id: string, hostelId: string): Promise<void> {
     await db.transaction(async (tx) => {
+      // 1. Delete advance rent allocations first (references hosteller and payments)
+      await tx.delete(advanceRentAllocations).where(eq(advanceRentAllocations.hostellerId, id));
+
+      // 2. Delete payments (references hosteller and bills)
       await tx.delete(payments).where(eq(payments.hostellerId, id));
       
-      // Delete bill items related to this hosteller's bills
+      // 3. Delete bill items related to this hosteller's bills
       const hostellerBills = await tx.select({ id: bills.id }).from(bills).where(eq(bills.hostellerId, id));
       if (hostellerBills.length > 0) {
         const billIds = hostellerBills.map(b => b.id);
-        // Fallback to loop if inArray doesn't work for some reason
         for (const bId of billIds) {
-           await tx.delete(billItems).where(eq(billItems.billId, bId));
+          await tx.delete(billItems).where(eq(billItems.billId, bId));
         }
       }
       
+      // 4. Delete bills
       await tx.delete(bills).where(eq(bills.hostellerId, id));
+
+      // 5. Delete room occupancies and security deposits
       await tx.delete(roomOccupancies).where(eq(roomOccupancies.hostellerId, id));
       await tx.delete(securityDeposits).where(eq(securityDeposits.hostellerId, id));
       
-      // Note: advance_rent_allocations might exist, let's try to delete them if imported, 
-      // but if not imported we can't. Let's ignore it for now or delete if we can.
-      
+      // 6. Delete hosteller
       const [deleted] = await tx
         .delete(hostellers)
         .where(and(eq(hostellers.id, id), eq(hostellers.hostelId, hostelId)))

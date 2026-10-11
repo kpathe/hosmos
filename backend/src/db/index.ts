@@ -24,10 +24,12 @@ import * as schema from "./schema/index.js";
 
 const pool = new pg.Pool({
   connectionString: env.DATABASE_URL,
-  max: env.NODE_ENV === "production" ? 3 : 1,   // keep it small for serverless
+  max: 10,                                        // Allow parallel requests without starving the pool
   min: 0,                                         // don't hold connections when idle
   idleTimeoutMillis: 20_000,                      // evict idle connections after 20s
   connectionTimeoutMillis: 30_000,                // Give Neon up to 30s to wake from scale-to-zero
+  keepAlive: true,                                // Enable OS TCP keepalive
+  keepAliveInitialDelayMillis: 10_000,            // Start keepalive probes after 10s of silence
   ssl: { rejectUnauthorized: false },
 });
 

@@ -37,6 +37,8 @@ import {
   Clock,
   BookOpen,
   Loader2,
+  LogOut,
+  AlertTriangle,
 } from "lucide-react";
 
 const MONTHS = [
@@ -118,6 +120,59 @@ export default function HostellerDetailPage() {
     },
   });
 
+  // Exit & Settlement States
+  const [isExitOpen, setIsExitOpen] = useState(false);
+  const [exitDate, setExitDate] = useState(new Date().toISOString().slice(0, 10));
+  const [exitType, setExitType] = useState<"normal" | "without_notice" | "early_approved">("normal");
+  const [damageDeductions, setDamageDeductions] = useState("0");
+  const [deductionNotes, setDeductionNotes] = useState("");
+
+  const damagePaise = Math.max(0, Math.round((parseFloat(damageDeductions || "0") || 0) * 100));
+
+  const { data: exitPreviewRes, isLoading: isLoadingPreview } = useQuery({
+    queryKey: ["exit-preview", hostelSlug, hostellerId, exitDate, exitType, damagePaise],
+    queryFn: () => apiClient.get<any>(
+      `/exits/preview/${hostellerId}?exit_date=${exitDate}&exit_type=${exitType}&damage_deductions_paise=${damagePaise}`,
+      { "x-hostel-slug": hostelSlug }
+    ),
+    enabled: isExitOpen && !!hostellerId,
+  });
+
+  const exitPreview = exitPreviewRes?.data ?? exitPreviewRes;
+
+  const markExitPendingMutation = useMutation({
+    mutationFn: () => apiClient.post(`/exits/${hostellerId}/mark-pending`, {}, { "x-hostel-slug": hostelSlug }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hosteller-details", hostellerId] });
+      toast({ title: "Notice Recorded", description: "Hosteller marked as exit pending." });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message || "Failed to mark notice.", variant: "destructive" });
+    },
+  });
+
+  const processExitMutation = useMutation({
+    mutationFn: () => apiClient.post(
+      "/exits",
+      {
+        hosteller_id: hostellerId,
+        exit_date: exitDate,
+        exit_type: exitType,
+        damage_deductions_paise: damagePaise,
+        deduction_notes: deductionNotes || undefined,
+      },
+      { "x-hostel-slug": hostelSlug }
+    ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["hosteller-details", hostellerId] });
+      toast({ title: "Exit Settled", description: "Hosteller exit processed and deposit settled." });
+      setIsExitOpen(false);
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message || "Failed to process exit.", variant: "destructive" });
+    },
+  });
+
 
   if (isLoading) {
     return (
@@ -163,22 +218,76 @@ export default function HostellerDetailPage() {
       </div>
 
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-          <User className="h-8 w-8 text-primary" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b">
+        <div className="flex items-center gap-4">
+          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <User className="h-8 w-8 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{hosteller.name}</h1>
+            {hosteller.father_name && (
+              <p className="text-muted-foreground text-sm">D/S of {hosteller.father_name}</p>
+            )}
+            <span
+              className={`mt-1 inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize ${
+                statusColor[hosteller.status] || ""
+              }`}
+            >
+              {hosteller.status.replace("_", " ")}
+            </span>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{hosteller.name}</h1>
-          {hosteller.father_name && (
-            <p className="text-muted-foreground">D/S of {hosteller.father_name}</p>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          {hosteller.status !== "removed" ? (
+            <>
+              {hosteller.status !== "exit_pending" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={markExitPendingMutation.isPending}
+                  onClick={() => markExitPendingMutation.mutate()}
+                >
+                  {markExitPendingMutation.isPending ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Clock className="mr-1.5 h-3.5 w-3.5 text-amber-500" />
+                  )}
+                  Mark Notice
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsChangeRoomOpen(true)}
+              >
+                <Bed className="mr-1.5 h-3.5 w-3.5 text-primary" />
+                Change Room
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setIsExitOpen(true)}
+              >
+                <LogOut className="mr-1.5 h-3.5 w-3.5" />
+                Process Exit & Settle
+              </Button>
+            </>
+          ) : (
+            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 py-1.5 px-3">
+              Exit Processed & Account Settled
+            </Badge>
           )}
-          <span
-            className={`mt-1 inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize ${
-              statusColor[hosteller.status] || ""
-            }`}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-destructive text-xs"
+            onClick={() => setIsDeleteOpen(true)}
           >
-            {hosteller.status.replace("_", " ")}
-          </span>
+            Delete
+          </Button>
         </div>
       </div>
 
@@ -260,9 +369,29 @@ export default function HostellerDetailPage() {
                     </p>
                   </div>
                 )}
-                <Badge variant={security_deposit.status === "held" ? "secondary" : "default"}>
+                <Badge
+                  variant={security_deposit.status === "held" ? "secondary" : "default"}
+                  className={security_deposit.status === "settled" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : ""}
+                >
                   {security_deposit.status}
                 </Badge>
+                {security_deposit.status === "settled" && (
+                  <div className="pt-2 border-t text-xs space-y-1">
+                    <p className="text-muted-foreground">
+                      Refunded: <span className="font-semibold text-foreground">{formatRupees(security_deposit.refunded_amount_paise || 0)}</span>
+                    </p>
+                    {security_deposit.settlement_date && (
+                      <p className="text-muted-foreground">
+                        Settled: <span className="text-foreground">{new Date(security_deposit.settlement_date).toLocaleDateString("en-IN")}</span>
+                      </p>
+                    )}
+                    {security_deposit.settlement_notes && (
+                      <p className="text-muted-foreground italic truncate">
+                        "{security_deposit.settlement_notes}"
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">No security deposit recorded.</p>
@@ -465,6 +594,140 @@ export default function HostellerDetailPage() {
             >
               {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Delete Hosteller
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Exit & Settlement Dialog */}
+      <Dialog open={isExitOpen} onOpenChange={setIsExitOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LogOut className="h-5 w-5 text-destructive" />
+              Process Exit & Final Settlement
+            </DialogTitle>
+            <DialogDescription>
+              Calculate liabilities, reconcile security deposit, and vacate room for {hosteller.name}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Exit Date</Label>
+                <Input
+                  type="date"
+                  value={exitDate}
+                  onChange={(e) => setExitDate(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Exit Type</Label>
+                <Select value={exitType} onValueChange={(val: any) => setExitType(val)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">Normal (Notice given)</SelectItem>
+                    <SelectItem value="without_notice">Without Notice (+1 mo. rent)</SelectItem>
+                    <SelectItem value="early_approved">Early Approved (Prorated)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Damage / Repair Deductions (₹)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={damageDeductions}
+                onChange={(e) => setDamageDeductions(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Deduction / Settlement Notes (Optional)</Label>
+              <Input
+                placeholder="Reason for deductions, inspection notes, etc."
+                value={deductionNotes}
+                onChange={(e) => setDeductionNotes(e.target.value)}
+              />
+            </div>
+
+            {/* Live Settlement Breakdown */}
+            <div className="rounded-xl border bg-muted/40 p-4 space-y-2.5">
+              <div className="flex items-center justify-between font-semibold text-xs text-muted-foreground uppercase tracking-wider pb-1 border-b">
+                <span>Settlement Breakdown</span>
+                {isLoadingPreview && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+              </div>
+
+              {exitPreview ? (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Original Security Deposit</span>
+                    <span className="font-medium text-emerald-600">+{formatRupees(exitPreview.original_deposit_paise)}</span>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Unpaid Bills Outstanding</span>
+                    <span className="font-medium text-destructive">-{formatRupees(exitPreview.outstanding_balance_paise)}</span>
+                  </div>
+
+                  {exitPreview.extra_rent_paise > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">No-Notice Penalty (1 mo. Rent)</span>
+                      <span className="font-medium text-destructive">-{formatRupees(exitPreview.extra_rent_paise)}</span>
+                    </div>
+                  )}
+
+                  {exitPreview.refund_credit_paise > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Early Exit Prorated Credit</span>
+                      <span className="font-medium text-emerald-600">+{formatRupees(exitPreview.refund_credit_paise)}</span>
+                    </div>
+                  )}
+
+                  {exitPreview.damage_deductions_paise > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Damage Deductions</span>
+                      <span className="font-medium text-destructive">-{formatRupees(exitPreview.damage_deductions_paise)}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-2 border-t mt-2">
+                    {exitPreview.net_refund_paise >= 0 ? (
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold text-base">
+                        <span>Net Refund to Hosteller</span>
+                        <span>{formatRupees(exitPreview.net_refund_paise)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive font-bold text-base">
+                        <span>Hosteller Owes Additionally</span>
+                        <span>{formatRupees(Math.abs(exitPreview.net_refund_paise))}</span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-4 text-xs text-muted-foreground">Calculating breakdown...</div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsExitOpen(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={processExitMutation.isPending || !exitDate}
+              onClick={() => processExitMutation.mutate()}
+            >
+              {processExitMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Confirm & Settle Exit
             </Button>
           </DialogFooter>
         </DialogContent>

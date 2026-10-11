@@ -16,6 +16,7 @@ import { billingRouter } from "../modules/billing/billing.routes.js";
 import { paymentsRouter } from "../modules/payments/payments.routes.js";
 import { metersRouter } from "../modules/meters/meters.routes.js";
 import { reportsRouter } from "../modules/reports/reports.routes.js";
+import { exitsRouter } from "../modules/exits/exits.routes.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Express Application Factory
@@ -67,6 +68,7 @@ export function createApp(): express.Application {
   app.use("/api/v1/payments", paymentsRouter);
   app.use("/api/v1/meters", metersRouter);
   app.use("/api/v1/reports", reportsRouter);
+  app.use("/api/v1/exits", exitsRouter);
   //
   // import { adminRouter } from "../modules/admin/admin.routes.js";
   // app.use("/api/v1/admin", adminRouter);
