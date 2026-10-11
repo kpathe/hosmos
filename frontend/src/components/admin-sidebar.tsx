@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Building, LayoutDashboard, Settings, LogOut, Users, Bed, CreditCard, ChevronLeft, UserPlus, Receipt, IndianRupee } from "lucide-react";
+import { Building, LayoutDashboard, Settings, LogOut, Users, Bed, CreditCard, ChevronLeft, Receipt, IndianRupee, Zap, BookOpen } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -15,11 +15,12 @@ export function AdminSidebar() {
   const firstSegment = pathSegments[0] || "";
   
   // Exclude known global paths from being treated as hostel IDs
-  const isGlobalRoute = ["admin", "hostels", "settings"].includes(firstSegment) || firstSegment === "";
+  const isGlobalRoute = ["admin", "hostels", "settings", "dashboard"].includes(firstSegment) || firstSegment === "";
   const isHostelContext = !isGlobalRoute && pathSegments.length >= 1;
   const hostelSlug = isHostelContext ? firstSegment : null;
 
   const globalLinks = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/hostels", label: "My Hostels", icon: Building },
     { href: "/settings", label: "Global Settings", icon: Settings },
   ];
@@ -32,6 +33,8 @@ export function AdminSidebar() {
     { href: `/${hostelSlug}/hostellers`, label: "Hostellers", icon: Users },
     { href: `/${hostelSlug}/billing`, label: "Billing", icon: Receipt },
     { href: `/${hostelSlug}/payments`, label: "Payments", icon: IndianRupee },
+    { href: `/${hostelSlug}/meters`, label: "Meter Readings", icon: Zap },
+    { href: `/${hostelSlug}/ledger`, label: "Ledger", icon: BookOpen },
   ];
 
   const links = hostelSlug ? hostelLinks : globalLinks;
@@ -39,7 +42,7 @@ export function AdminSidebar() {
   return (
     <aside className="w-64 shrink-0 border-r bg-card flex flex-col min-h-screen relative z-10 transition-transform">
       <div className="flex h-16 items-center border-b px-6">
-        <Link href="/hostels" className="text-xl font-bold tracking-tight text-primary flex items-center gap-2">
+        <Link href="/dashboard" className="text-xl font-bold tracking-tight text-primary flex items-center gap-2">
           <Building className="h-6 w-6" />
           Hosmos
         </Link>

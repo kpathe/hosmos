@@ -36,6 +36,7 @@ import {
   CheckCircle2,
   Clock,
   BookOpen,
+  Loader2,
 } from "lucide-react";
 
 const MONTHS = [
@@ -59,76 +60,6 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="text-sm font-medium">{value}</p>
       </div>
-
-      {/* Change Room Dialog */}
-      <Dialog open={isChangeRoomOpen} onOpenChange={setIsChangeRoomOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Change Room</DialogTitle>
-            <DialogDescription>
-              Assign the hosteller to a new room. This will close their current occupancy and start a new one.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Select New Room</Label>
-              <Select value={newRoomId} onValueChange={setNewRoomId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a room" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roomsList.map((r: RoomDto) => (
-                    <SelectItem key={r.id} value={r.id}>
-                      {r.room_number} (Floor {r.floor}, {r.capacity} Beds)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsChangeRoomOpen(false)}>Cancel</Button>
-            <Button 
-              disabled={!newRoomId || changeRoomMutation.isPending}
-              onClick={() => changeRoomMutation.mutate(newRoomId)}
-            >
-              {changeRoomMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Hosteller Dialog */}
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Hosteller</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to permanently delete {hosteller?.name}? This will remove all their records including bills and payments.
-              To confirm, please type <strong>DELETE</strong> below.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input 
-              value={deleteConfirmText} 
-              onChange={(e) => setDeleteConfirmText(e.target.value)} 
-              placeholder="Type DELETE to confirm" 
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
-            <Button 
-              variant="destructive"
-              disabled={deleteConfirmText !== "DELETE" || deleteMutation.isPending}
-              onClick={() => deleteMutation.mutate()}
-            >
-              {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Delete Hosteller
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -468,6 +399,76 @@ export default function HostellerDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Change Room Dialog */}
+      <Dialog open={isChangeRoomOpen} onOpenChange={setIsChangeRoomOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Room</DialogTitle>
+            <DialogDescription>
+              Assign the hosteller to a new room. This will close their current occupancy and start a new one.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select New Room</Label>
+              <Select value={newRoomId} onValueChange={(val) => setNewRoomId(val || "")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a room" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roomsList.map((r: RoomDto) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.room_number} (Floor {r.floor}, {r.capacity} Beds)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsChangeRoomOpen(false)}>Cancel</Button>
+            <Button 
+              disabled={!newRoomId || changeRoomMutation.isPending}
+              onClick={() => changeRoomMutation.mutate(newRoomId)}
+            >
+              {changeRoomMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Hosteller Dialog */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Hosteller</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete {details?.hosteller?.name}? This will remove all their records including bills and payments.
+              To confirm, please type <strong>DELETE</strong> below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input 
+              value={deleteConfirmText} 
+              onChange={(e) => setDeleteConfirmText(e.target.value)} 
+              placeholder="Type DELETE to confirm" 
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+            <Button 
+              variant="destructive"
+              disabled={deleteConfirmText !== "DELETE" || deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate()}
+            >
+              {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Delete Hosteller
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

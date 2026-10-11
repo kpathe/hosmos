@@ -87,7 +87,7 @@ function LoginForm() {
       } else if (role === "hosteller") {
         router.replace("/portal/dashboard");
       } else {
-        router.replace("/hostels");
+        router.replace("/dashboard");
       }
     } catch (err: any) {
       setErrorMsg(err.message);

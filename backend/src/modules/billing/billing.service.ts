@@ -9,6 +9,7 @@ import { pricingModels } from "../../db/schema/pricing-models.js";
 import { NotFoundError, BusinessRuleError } from "../../utils/errors.js";
 import type { AddBillItemDto, UpdateBillItemDto } from "./billing.schema.js";
 import type { BillDto, BillItemDto } from "@hosmos/types";
+import { metersService } from "../meters/meters.service.js";
 
 function mapBillItemToDto(record: typeof billItems.$inferSelect): BillItemDto {
   return {
@@ -83,9 +84,10 @@ export class BillingService {
             )
           );
 
-        // Get active occupancy to determine rent amount
+        // Get active occupancy to determine rent amount and room
         const [occupancyData] = await tx
           .select({
+            roomId: roomOccupancies.roomId,
             monthlyAmountPaise: pricingModels.monthlyAmountPaise,
           })
           .from(roomOccupancies)
@@ -99,8 +101,6 @@ export class BillingService {
           );
 
         if (!occupancyData) {
-          // If no active occupancy, skip billing them for rent? 
-          // Usually an active/exit_pending hosteller must have an occupancy.
           billsSkipped++;
           return;
         }
@@ -108,18 +108,25 @@ export class BillingService {
         let rentAmountPaise = occupancyData.monthlyAmountPaise;
 
         // If advance covers this month, rent is logically covered.
-        // PRD: "If advance rent covers a billing period, the bill for that month must not include a rent charge."
-        // We can either omit the rent, or add rent and add a negative advance_allocation item.
-        // Let's omit the rent item, or add a 0 net. The PRD says:
-        // "monthly bills for advance-covered months do not include a rent charge".
-        // Wait, what if the advance doesn't fully cover the rent? 
-        // Typically it covers 1 full month. We'll just omit the rent item.
         let includeRent = true;
         if (advance && advance.amountPaise >= rentAmountPaise) {
           includeRent = false;
         } else if (advance) {
-          // If advance partially covers it (rare), reduce rent.
           rentAmountPaise -= advance.amountPaise;
+        }
+
+        // Check if electricity readings are available for this period
+        const electricityShare = await metersService.getRoomElectricityShare(
+          tx,
+          hostelId,
+          occupancyData.roomId,
+          year,
+          month
+        );
+
+        let totalAmountPaise = includeRent ? rentAmountPaise : 0;
+        if (electricityShare && electricityShare.perOccupantCostPaise > 0) {
+          totalAmountPaise += electricityShare.perOccupantCostPaise;
         }
 
         const [newBill] = await tx
@@ -130,7 +137,7 @@ export class BillingService {
             billingPeriodYear: year,
             billingPeriodMonth: month,
             status: "unpaid",
-            totalAmountPaise: includeRent ? rentAmountPaise : 0,
+            totalAmountPaise,
             createdBy: userId,
           })
           .returning();
@@ -142,6 +149,17 @@ export class BillingService {
             itemType: "rent",
             description: `Rent - ${month}/${year}`,
             amountPaise: rentAmountPaise,
+            createdBy: userId,
+          });
+        }
+
+        if (electricityShare && electricityShare.perOccupantCostPaise > 0) {
+          await tx.insert(billItems).values({
+            billId: newBill!.id,
+            hostelId,
+            itemType: "electricity",
+            description: `Electricity Share - ${month}/${year} (${electricityShare.units} units)`,
+            amountPaise: electricityShare.perOccupantCostPaise,
             createdBy: userId,
           });
         }
