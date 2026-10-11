@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { AuthGuard } from "@/components/auth-guard";
 import { Button } from "@/components/ui/button";
-import { LogOut, Home, Receipt, BedDouble } from "lucide-react";
+import { LogOut, Home, Receipt, BedDouble, CreditCard } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Portal Shell
@@ -47,6 +47,13 @@ function PortalShell({ children }: { children: ReactNode }) {
             >
               <BedDouble className="h-4 w-4" />
               My Room
+            </Link>
+            <Link
+              href="/portal/payments"
+              className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <CreditCard className="h-4 w-4" />
+              Payments
             </Link>
           </nav>
 

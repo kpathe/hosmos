@@ -17,6 +17,7 @@ import { paymentsRouter } from "../modules/payments/payments.routes.js";
 import { metersRouter } from "../modules/meters/meters.routes.js";
 import { reportsRouter } from "../modules/reports/reports.routes.js";
 import { exitsRouter } from "../modules/exits/exits.routes.js";
+import { portalRouter } from "../modules/portal/portal.routes.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Express Application Factory
@@ -69,12 +70,7 @@ export function createApp(): express.Application {
   app.use("/api/v1/meters", metersRouter);
   app.use("/api/v1/reports", reportsRouter);
   app.use("/api/v1/exits", exitsRouter);
-  //
-  // import { adminRouter } from "../modules/admin/admin.routes.js";
-  // app.use("/api/v1/admin", adminRouter);
-  //
-  // import { portalRouter } from "../modules/portal/portal.routes.js";
-  // app.use("/api/v1/portal", portalRouter);
+  app.use("/api/v1/portal", portalRouter);
 
   if (isDevelopment) {
     app.get("/api/v1", (_req, res) => {

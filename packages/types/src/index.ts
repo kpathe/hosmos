@@ -402,3 +402,40 @@ export interface ExitSettlementDto {
   damage_deductions_paise: number;
   net_refund_paise: number; // Negative means hosteller owes money
 }
+
+// ─── Portal DTOs ─────────────────────────────────────────────────────────────
+
+export interface PortalProfileDto {
+  hosteller: HostellerDto;
+  hostel: HostelDto;
+  security_deposit: SecurityDepositDto | null;
+  current_room: {
+    id: string;
+    room_number: string;
+    floor: string;
+    capacity: number;
+  } | null;
+  active_bill_count: number;
+  total_outstanding_paise: number;
+  last_payment: PaymentDto | null;
+}
+
+export interface PortalRoomDto {
+  room: {
+    id: string;
+    room_number: string;
+    floor: string;
+    capacity: number;
+  };
+  pricing_model: {
+    name: string;
+    monthly_amount_paise: number;
+  } | null;
+  roommates: Array<{
+    id: string;
+    name: string;
+    admission_date: string;
+    phone?: string | null;
+  }>;
+  meter_readings: MeterReadingDto[];
+}
