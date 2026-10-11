@@ -153,19 +153,23 @@ export default function GlobalDashboardPage() {
               <Sparkles className="h-3.5 w-3.5" /> Portfolio Command Center
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
-              Welcome back, {user?.name || "Owner"}
+              Welcome back, {user?.name || (user?.role === "manager" ? "Manager" : "Owner")}
             </h1>
             <p className="text-sm md:text-base text-muted-foreground max-w-xl">
-              Track multi-hostel operations, resident occupancy, and quick access to all property controls.
+              {user?.role === "manager"
+                ? "Manage admissions, occupancy, and payments across your assigned properties."
+                : "Track multi-hostel operations, resident occupancy, and quick access to all property controls."}
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link href="/hostels/new" className={buttonVariants({ size: "lg", className: "shadow-md gap-2" })}>
-              <Plus className="h-4 w-4" />
-              Register New Hostel
-            </Link>
-          </div>
+          {user?.role === "owner" && (
+            <div className="flex items-center gap-3">
+              <Link href="/hostels/new" className={buttonVariants({ size: "lg", className: "shadow-md gap-2" })}>
+                <Plus className="h-4 w-4" />
+                Register New Hostel
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 

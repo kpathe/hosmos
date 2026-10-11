@@ -22,6 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/auth-context";
 import {
   ArrowLeft,
   User,
@@ -207,6 +208,9 @@ export default function HostellerDetailPage() {
     removed: "bg-red-500/10 text-red-600 border-red-200",
   };
 
+  const { user } = useAuth();
+  const isOwner = user?.role === "owner";
+
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
       {/* Back button */}
@@ -257,22 +261,26 @@ export default function HostellerDetailPage() {
                   Mark Notice
                 </Button>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsChangeRoomOpen(true)}
-              >
-                <Bed className="mr-1.5 h-3.5 w-3.5 text-primary" />
-                Change Room
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setIsExitOpen(true)}
-              >
-                <LogOut className="mr-1.5 h-3.5 w-3.5" />
-                Process Exit & Settle
-              </Button>
+              {isOwner && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsChangeRoomOpen(true)}
+                >
+                  <Bed className="mr-1.5 h-3.5 w-3.5 text-primary" />
+                  Change Room
+                </Button>
+              )}
+              {isOwner && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setIsExitOpen(true)}
+                >
+                  <LogOut className="mr-1.5 h-3.5 w-3.5" />
+                  Process Exit & Settle
+                </Button>
+              )}
             </>
           ) : (
             <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 py-1.5 px-3">
@@ -280,14 +288,16 @@ export default function HostellerDetailPage() {
             </Badge>
           )}
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-destructive text-xs"
-            onClick={() => setIsDeleteOpen(true)}
-          >
-            Delete
-          </Button>
+          {isOwner && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-destructive text-xs"
+              onClick={() => setIsDeleteOpen(true)}
+            >
+              Delete
+            </Button>
+          )}
         </div>
       </div>
 

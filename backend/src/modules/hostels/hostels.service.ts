@@ -2,6 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { db } from "../../db/index.js";
 import { hostels } from "../../db/schema/hostels.js";
+import { hostelManagers } from "../../db/schema/managers.js";
 import type { 
   CreateHostelRequest, 
   UpdateHostelRequest, 
@@ -27,15 +28,32 @@ function mapHostelToDto(record: typeof hostels.$inferSelect): HostelDto {
 
 export class HostelsService {
   /**
-   * Retrieves all hostels owned by the specified owner.
+   * Retrieves all hostels accessible by the specified user (owner or manager).
    */
-  async getHostelsByOwner(ownerId: string): Promise<HostelDto[]> {
+  async getHostelsForUser(userId: string, role: string): Promise<HostelDto[]> {
+    if (role === "manager") {
+      const records = await db
+        .select({ hostel: hostels })
+        .from(hostelManagers)
+        .innerJoin(hostels, eq(hostels.id, hostelManagers.hostelId))
+        .where(eq(hostelManagers.managerId, userId));
+
+      return records.map((r) => mapHostelToDto(r.hostel));
+    }
+
     const records = await db
       .select()
       .from(hostels)
-      .where(eq(hostels.ownerId, ownerId));
+      .where(eq(hostels.ownerId, userId));
 
     return records.map(mapHostelToDto);
+  }
+
+  /**
+   * Retrieves all hostels owned by the specified owner.
+   */
+  async getHostelsByOwner(ownerId: string): Promise<HostelDto[]> {
+    return this.getHostelsForUser(ownerId, "owner");
   }
 
   /**

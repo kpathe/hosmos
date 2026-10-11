@@ -6,10 +6,12 @@ import type { HostelDto } from "@hosmos/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/auth-context";
 import Link from "next/link";
 import { Plus, Building } from "lucide-react";
 
 export default function HostelsPage() {
+  const { user } = useAuth();
   const { data: response, isLoading } = useQuery({
     queryKey: ["hostels"],
     queryFn: () => apiClient.getList<HostelDto>("/hostels"),
@@ -23,13 +25,17 @@ export default function HostelsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Your Hostels</h1>
           <p className="text-muted-foreground mt-2">
-            Manage your hostel properties, or add a new one.
+            {user?.role === "manager"
+              ? "Properties assigned to your manager account."
+              : "Manage your hostel properties, or add a new one."}
           </p>
         </div>
-        <Link href="/hostels/new" className={buttonVariants()}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Hostel
-        </Link>
+        {user?.role === "owner" && (
+          <Link href="/hostels/new" className={buttonVariants()}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Hostel
+          </Link>
+        )}
       </div>
 
       {isLoading ? (

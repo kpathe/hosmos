@@ -10,8 +10,9 @@ export class HostelsController {
    */
   async getHostels(req: Request, res: Response<ApiCollectionResponse<HostelDto>>, next: NextFunction) {
     try {
-      const ownerId = req.user!.sub;
-      const hostels = await hostelsService.getHostelsByOwner(ownerId);
+      const userId = req.user!.sub;
+      const role = req.user!.role;
+      const hostels = await hostelsService.getHostelsForUser(userId, role);
       
       res.status(200).json({
         data: hostels,

@@ -16,7 +16,7 @@ router.post(
 
 router.get(
   "/",
-  requireRole(["owner"]),
+  requireRole(["owner", "manager"]),
   hostelsController.getHostels.bind(hostelsController)
 );
 

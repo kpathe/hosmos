@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/auth-context";
 import { CreditCard, Plus, Loader2, Edit, Trash2 } from "lucide-react";
 
 const pricingSchema = z.object({
@@ -32,6 +33,8 @@ export default function PricingModelsPage() {
   const params = useParams();
   const hostelSlug = params.hostelSlug as string;
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isOwner = user?.role === "owner";
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPricing, setEditingPricing] = useState<PricingModelDto | null>(null);
@@ -108,11 +111,12 @@ export default function PricingModelsPage() {
           <p className="text-muted-foreground mt-2">Configure pricing plans for your rooms.</p>
         </div>
         
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger render={<Button />}>
-            <Plus className="mr-2 h-4 w-4" /> Add Model
-          </DialogTrigger>
-          <DialogContent>
+        {isOwner && (
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger render={<Button />}>
+              <Plus className="mr-2 h-4 w-4" /> Add Model
+            </DialogTrigger>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Pricing Model</DialogTitle>
               <DialogDescription>Create a new pricing tier for your hostel.</DialogDescription>
@@ -155,6 +159,7 @@ export default function PricingModelsPage() {
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <Card>
@@ -203,27 +208,33 @@ export default function PricingModelsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => {
-                            setEditingPricing(pm);
-                            setEditPriceRupees(pm.monthly_amount_paise / 100);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => {
-                            setPricingToDelete(pm);
-                            setDeleteConfirmText("");
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {isOwner ? (
+                          <>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => {
+                                setEditingPricing(pm);
+                                setEditPriceRupees(pm.monthly_amount_paise / 100);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => {
+                                setPricingToDelete(pm);
+                                setDeleteConfirmText("");
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">View only</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

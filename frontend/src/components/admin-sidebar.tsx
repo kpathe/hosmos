@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Building, LayoutDashboard, Settings, Users, Bed, CreditCard, ChevronLeft, Receipt, IndianRupee, Zap, BookOpen, UserMinus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 
 export function AdminSidebar() {
@@ -17,23 +18,29 @@ export function AdminSidebar() {
   const isHostelContext = !isGlobalRoute && pathSegments.length >= 1;
   const hostelSlug = isHostelContext ? firstSegment : null;
 
+  const { user } = useAuth();
+  const isManager = user?.role === "manager";
+
+  // Managers do not manage global settings
   const globalLinks = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/hostels", label: "My Hostels", icon: Building },
-    { href: "/settings", label: "Global Settings", icon: Settings },
+    ...(!isManager ? [{ href: "/settings", label: "Global Settings", icon: Settings }] : []),
   ];
 
+  // Managers per PRD 6.2:
+  // Cannot: manage other managers, manage pricing models, process exits
   const hostelLinks = [
     { href: `/${hostelSlug}/dashboard`, label: "Dashboard", icon: LayoutDashboard },
     { href: `/${hostelSlug}/rooms`, label: "Rooms", icon: Bed },
-    { href: `/${hostelSlug}/pricing`, label: "Pricing Models", icon: CreditCard },
-    { href: `/${hostelSlug}/managers`, label: "Managers", icon: Users },
+    ...(!isManager ? [{ href: `/${hostelSlug}/pricing`, label: "Pricing Models", icon: CreditCard }] : []),
+    ...(!isManager ? [{ href: `/${hostelSlug}/managers`, label: "Managers", icon: Users }] : []),
     { href: `/${hostelSlug}/hostellers`, label: "Hostellers", icon: Users },
     { href: `/${hostelSlug}/billing`, label: "Billing", icon: Receipt },
     { href: `/${hostelSlug}/payments`, label: "Payments", icon: IndianRupee },
     { href: `/${hostelSlug}/meters`, label: "Meter Readings", icon: Zap },
     { href: `/${hostelSlug}/ledger`, label: "Ledger", icon: BookOpen },
-    { href: `/${hostelSlug}/exits`, label: "Exits", icon: UserMinus },
+    ...(!isManager ? [{ href: `/${hostelSlug}/exits`, label: "Exits", icon: UserMinus }] : []),
   ];
 
   const links = hostelSlug ? hostelLinks : globalLinks;

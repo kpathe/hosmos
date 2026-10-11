@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/auth-context";
 import { Bed, Plus, Loader2, Edit, Trash2 } from "lucide-react";
 
 const roomSchema = z.object({
@@ -32,6 +33,8 @@ export default function RoomsPage() {
   const params = useParams();
   const hostelSlug = params.hostelSlug as string;
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isOwner = user?.role === "owner";
   const queryClient = useQueryClient();
   const router = useRouter();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -247,19 +250,21 @@ export default function RoomsPage() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-destructive hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setRoomToDelete(room);
-                              setDeleteConfirmText("");
-                            }}
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {isOwner && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-destructive hover:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRoomToDelete(room);
+                                setDeleteConfirmText("");
+                              }}
+                              disabled={deleteMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     );

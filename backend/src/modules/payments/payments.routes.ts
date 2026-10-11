@@ -9,17 +9,17 @@ const router = Router({ mergeParams: true });
 router.use(requireAuth);
 router.use(tenantMiddleware);
 
-// Only owners can record payments
+// Owners and managers can record payments
 router.post(
   "/",
-  requireRole(["owner"]),
+  requireRole(["owner", "manager"]),
   paymentsController.recordPayment.bind(paymentsController)
 );
 
-// Owners can view payments
+// Owners and managers can view payments
 router.get(
   "/",
-  requireRole(["owner"]),
+  requireRole(["owner", "manager"]),
   paymentsController.getPayments.bind(paymentsController)
 );
 

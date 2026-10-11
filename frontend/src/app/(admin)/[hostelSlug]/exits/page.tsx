@@ -9,6 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { LogOut, UserMinus, ShieldCheck, Calendar, FileText } from "lucide-react";
 
+import { useAuth } from "@/contexts/auth-context";
+import { useEffect } from "react";
+
 function formatRupees(paise: number) {
   return `₹${(paise / 100).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
@@ -20,10 +23,22 @@ export default function ExitsPage() {
   const params = useParams();
   const hostelSlug = params.hostelSlug as string;
   const router = useRouter();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user && user.role !== "owner") {
+      router.replace(`/${hostelSlug}/dashboard`);
+    }
+  }, [user, hostelSlug, router]);
+
+  if (user && user.role !== "owner") {
+    return null;
+  }
 
   const { data: response, isLoading } = useQuery({
     queryKey: ["exits", hostelSlug],
     queryFn: () => apiClient.get<any[]>("/exits", { "x-hostel-slug": hostelSlug }),
+    enabled: user?.role === "owner",
   });
 
   const exits = response ?? [];

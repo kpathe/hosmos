@@ -34,9 +34,10 @@ router.get(
   roomsController.getRooms.bind(roomsController)
 );
 
+// Only owners can delete rooms
 router.delete(
   "/:id",
-  requireRole(["owner", "manager"]),
+  requireRole(["owner"]),
   roomsController.deleteRoom.bind(roomsController)
 );
 

@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiClient } from "@/lib/api-client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/auth-context";
 import type { BillDto, GenerateBillsRequest, GenerateBillsResponse } from "@hosmos/types";
 import {
   Table,
@@ -94,6 +95,9 @@ export default function BillingPage() {
     });
   };
 
+  const { user } = useAuth();
+  const isOwner = user?.role === "owner";
+
   return (
     <div className="space-y-6 animate-in fade-in-50 duration-500">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -101,9 +105,11 @@ export default function BillingPage() {
           <h1 className="text-3xl font-bold tracking-tight">Billing</h1>
           <p className="text-muted-foreground mt-1">Manage monthly rent and electricity bills</p>
         </div>
-        <Button onClick={() => setIsGenerateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Generate Bills
-        </Button>
+        {isOwner && (
+          <Button onClick={() => setIsGenerateOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Generate Bills
+          </Button>
+        )}
       </div>
 
       <div className="flex gap-4 items-center bg-muted/30 p-4 rounded-lg border">

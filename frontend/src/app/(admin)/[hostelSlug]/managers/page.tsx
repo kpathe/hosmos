@@ -20,6 +20,10 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Users, Plus, Loader2, Edit, Trash2 } from "lucide-react";
 
+import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
 const managerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
@@ -32,11 +36,24 @@ export default function ManagersPage() {
   const hostelSlug = params.hostelSlug as string;
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const router = useRouter();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  useEffect(() => {
+    if (user && user.role !== "owner") {
+      router.replace(`/${hostelSlug}/dashboard`);
+    }
+  }, [user, hostelSlug, router]);
+
+  if (user && user.role !== "owner") {
+    return null;
+  }
 
   const { data: response, isLoading } = useQuery({
     queryKey: ["managers", hostelSlug],
     queryFn: () => apiClient.getList<ManagerDto>("/managers", { "x-hostel-slug": hostelSlug }),
+    enabled: user?.role === "owner",
   });
 
   const managers = response?.data || [];

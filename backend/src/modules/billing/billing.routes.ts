@@ -16,16 +16,16 @@ router.post(
   billingController.generateBills.bind(billingController)
 );
 
-// Owners can view bills
+// Owners and managers can view bills (needed to record payments against bills)
 router.get(
   "/",
-  requireRole(["owner"]),
+  requireRole(["owner", "manager"]),
   billingController.getBills.bind(billingController)
 );
 
 router.get(
   "/:id",
-  requireRole(["owner"]),
+  requireRole(["owner", "manager"]),
   billingController.getBillById.bind(billingController)
 );
 
