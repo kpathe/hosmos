@@ -1,4 +1,4 @@
-import { eq, and, isNull, sql, inArray } from "drizzle-orm";
+import { eq, and, isNull, sql, inArray, or } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { hostellers } from "../../db/schema/hostellers.js";
 import { securityDeposits } from "../../db/schema/security-deposits.js";
@@ -10,16 +10,26 @@ import { NotFoundError, BusinessRuleError } from "../../utils/errors.js";
 import type { ProcessExitDto, ExitPreviewDto } from "./exits.schema.js";
 import type { ExitSettlementDto } from "@hosmos/types";
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function getHostellerLookupCondition(identifier: string) {
+  return UUID_REGEX.test(identifier)
+    ? or(eq(hostellers.id, identifier), eq(hostellers.nameSlug, identifier))
+    : eq(hostellers.nameSlug, identifier);
+}
+
 export class ExitsService {
   async markExitPending(hostelId: string, hostellerId: string, userId: string) {
     const [hosteller] = await db
       .select()
       .from(hostellers)
-      .where(and(eq(hostellers.id, hostellerId), eq(hostellers.hostelId, hostelId)));
+      .where(and(getHostellerLookupCondition(hostellerId), eq(hostellers.hostelId, hostelId)));
 
     if (!hosteller) {
       throw new NotFoundError("Hosteller not found");
     }
+
+    const actualHostellerId = hosteller.id;
 
     if (hosteller.status === "removed") {
       throw new BusinessRuleError("ALREADY_REMOVED", "Hosteller has already exited and been removed");
@@ -31,7 +41,7 @@ export class ExitsService {
         status: "exit_pending",
         updatedAt: new Date(),
       })
-      .where(eq(hostellers.id, hostellerId))
+      .where(eq(hostellers.id, actualHostellerId))
       .returning();
 
     return {
@@ -48,11 +58,13 @@ export class ExitsService {
     const [hosteller] = await db
       .select()
       .from(hostellers)
-      .where(and(eq(hostellers.id, hostellerId), eq(hostellers.hostelId, hostelId)));
+      .where(and(getHostellerLookupCondition(hostellerId), eq(hostellers.hostelId, hostelId)));
 
     if (!hosteller) {
       throw new NotFoundError("Hosteller not found");
     }
+
+    const actualHostellerId = hosteller.id;
 
     if (hosteller.status === "removed") {
       throw new BusinessRuleError("ALREADY_REMOVED", "Hosteller has already exited");
@@ -71,7 +83,7 @@ export class ExitsService {
       .innerJoin(pricingModels, eq(rooms.pricingModelId, pricingModels.id))
       .where(
         and(
-          eq(roomOccupancies.hostellerId, hostellerId),
+          eq(roomOccupancies.hostellerId, actualHostellerId),
           isNull(roomOccupancies.effectiveTo)
         )
       );
@@ -80,7 +92,7 @@ export class ExitsService {
     const [deposit] = await db
       .select()
       .from(securityDeposits)
-      .where(and(eq(securityDeposits.hostellerId, hostellerId), eq(securityDeposits.hostelId, hostelId)));
+      .where(and(eq(securityDeposits.hostellerId, actualHostellerId), eq(securityDeposits.hostelId, hostelId)));
 
     const depositAmountPaise = deposit?.originalAmountPaise || 0;
 
@@ -88,7 +100,7 @@ export class ExitsService {
     const unpaidBills = await db
       .select()
       .from(bills)
-      .where(and(eq(bills.hostellerId, hostellerId), eq(bills.status, "unpaid")));
+      .where(and(eq(bills.hostellerId, actualHostellerId), eq(bills.status, "unpaid")));
 
     const outstandingBalancePaise = unpaidBills.reduce((acc, b) => acc + b.totalAmountPaise, 0);
 
@@ -142,11 +154,13 @@ export class ExitsService {
       const [hosteller] = await tx
         .select()
         .from(hostellers)
-        .where(and(eq(hostellers.id, dto.hosteller_id), eq(hostellers.hostelId, hostelId)));
+        .where(and(getHostellerLookupCondition(dto.hosteller_id), eq(hostellers.hostelId, hostelId)));
 
       if (!hosteller) {
         throw new NotFoundError("Hosteller not found");
       }
+
+      const actualHostellerId = hosteller.id;
 
       if (hosteller.status === "removed") {
         throw new BusinessRuleError("ALREADY_REMOVED", "Hosteller has already exited");
@@ -155,7 +169,7 @@ export class ExitsService {
       const [deposit] = await tx
         .select()
         .from(securityDeposits)
-        .where(and(eq(securityDeposits.hostellerId, dto.hosteller_id), eq(securityDeposits.hostelId, hostelId)));
+        .where(and(eq(securityDeposits.hostellerId, actualHostellerId), eq(securityDeposits.hostelId, hostelId)));
 
       if (!deposit) {
         throw new NotFoundError("Security deposit record not found for this hosteller");
@@ -175,7 +189,7 @@ export class ExitsService {
         .innerJoin(pricingModels, eq(rooms.pricingModelId, pricingModels.id))
         .where(
           and(
-            eq(roomOccupancies.hostellerId, dto.hosteller_id),
+            eq(roomOccupancies.hostellerId, actualHostellerId),
             isNull(roomOccupancies.effectiveTo)
           )
         );
@@ -198,7 +212,7 @@ export class ExitsService {
             .insert(bills)
             .values({
               hostelId,
-              hostellerId: dto.hosteller_id,
+              hostellerId: actualHostellerId,
               billingPeriodYear: exitYear,
               billingPeriodMonth: exitMonth,
               status: "unpaid",
@@ -227,7 +241,7 @@ export class ExitsService {
       const unpaidBills = await tx
         .select()
         .from(bills)
-        .where(and(eq(bills.hostellerId, dto.hosteller_id), eq(bills.status, "unpaid")));
+        .where(and(eq(bills.hostellerId, actualHostellerId), eq(bills.status, "unpaid")));
 
       const outstandingBalancePaise = unpaidBills.reduce((acc, b) => acc + b.totalAmountPaise, 0);
 
@@ -281,10 +295,10 @@ export class ExitsService {
           status: "removed",
           updatedAt: new Date(),
         })
-        .where(eq(hostellers.id, dto.hosteller_id));
+        .where(eq(hostellers.id, actualHostellerId));
 
       return {
-        hosteller_id: dto.hosteller_id,
+        hosteller_id: actualHostellerId,
         exit_date: dto.exit_date,
         exit_type: dto.exit_type,
         security_deposit: {

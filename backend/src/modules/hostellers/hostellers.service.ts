@@ -1,4 +1,4 @@
-import { eq, asc, desc, and, isNull } from "drizzle-orm";
+import { eq, asc, desc, and, isNull, or } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { hostellers } from "../../db/schema/hostellers.js";
 import { roomOccupancies } from "../../db/schema/room-occupancies.js";
@@ -8,6 +8,14 @@ import { securityDeposits } from "../../db/schema/security-deposits.js";
 import { advanceRentAllocations } from "../../db/schema/advance-rent-allocations.js";
 import { rooms } from "../../db/schema/rooms.js";
 import type { HostellerDto, BillDto, PaymentDto, SecurityDepositDto, RoomOccupancyDto } from "@hosmos/types";
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function getHostellerLookupCondition(identifier: string) {
+  return UUID_REGEX.test(identifier)
+    ? or(eq(hostellers.id, identifier), eq(hostellers.nameSlug, identifier))
+    : eq(hostellers.nameSlug, identifier);
+}
 
 export interface HostellerDetailsDto {
   hosteller: HostellerDto;
@@ -50,21 +58,24 @@ class HostellersService {
     }
   }
 
-  async getHostellerById(hostellerId: string): Promise<HostellerDto | null> {
+  async getHostellerById(identifier: string): Promise<HostellerDto | null> {
     const record = await db.query.hostellers.findFirst({
-      where: eq(hostellers.id, hostellerId),
+      where: getHostellerLookupCondition(identifier),
     });
     return record ? this.mapToDto(record) : null;
   }
 
   /**
    * Get full hosteller details: profile + room + bills + payments + security deposit
+   * Supports lookup by both UUID (id) and human-friendly URL slug (name_slug).
    */
-  async getHostellerDetails(hostellerId: string): Promise<HostellerDetailsDto | null> {
+  async getHostellerDetails(identifier: string): Promise<HostellerDetailsDto | null> {
     const record = await db.query.hostellers.findFirst({
-      where: eq(hostellers.id, hostellerId),
+      where: getHostellerLookupCondition(identifier),
     });
     if (!record) return null;
+
+    const hostellerId = record.id;
 
     // Current active room occupancy
     const occupancyRows = await db
@@ -177,11 +188,12 @@ class HostellersService {
     };
   }
 
-  async changeRoom(id: string, hostelId: string, newRoomId: string): Promise<void> {
+  async changeRoom(identifier: string, hostelId: string, newRoomId: string): Promise<void> {
     const existing = await db.query.hostellers.findFirst({
-      where: and(eq(hostellers.id, id), eq(hostellers.hostelId, hostelId))
+      where: and(getHostellerLookupCondition(identifier), eq(hostellers.hostelId, hostelId))
     });
     if (!existing) throw new Error("Hosteller not found");
+    const id = existing.id;
 
     // Close current occupancy and open new one
     await db.transaction(async (tx) => {
@@ -198,7 +210,13 @@ class HostellersService {
     });
   }
 
-  async deleteHosteller(id: string, hostelId: string): Promise<void> {
+  async deleteHosteller(identifier: string, hostelId: string): Promise<void> {
+    const existing = await db.query.hostellers.findFirst({
+      where: and(getHostellerLookupCondition(identifier), eq(hostellers.hostelId, hostelId))
+    });
+    if (!existing) throw new Error("Hosteller not found or unauthorized");
+    const id = existing.id;
+
     await db.transaction(async (tx) => {
       // 1. Delete advance rent allocations first (references hosteller and payments)
       await tx.delete(advanceRentAllocations).where(eq(advanceRentAllocations.hostellerId, id));

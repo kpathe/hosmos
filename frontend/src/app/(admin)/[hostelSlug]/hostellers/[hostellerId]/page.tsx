@@ -81,6 +81,7 @@ export default function HostellerDetailPage() {
   });
 
   const details = response;
+  const actualHostellerId = details?.hosteller?.id || hostellerId;
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -98,9 +99,10 @@ export default function HostellerDetailPage() {
   const roomsList = roomsResponse?.data || [];
 
   const changeRoomMutation = useMutation({
-    mutationFn: (roomId: string) => apiClient.put(`/hostellers/${hostellerId}/room`, { room_id: roomId }, { "x-hostel-slug": hostelSlug }),
+    mutationFn: (roomId: string) => apiClient.put(`/hostellers/${actualHostellerId}/room`, { room_id: roomId }, { "x-hostel-slug": hostelSlug }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["hosteller-details", hostellerId] });
+      queryClient.invalidateQueries({ queryKey: ["hosteller-details", actualHostellerId] });
       toast({ title: "Success", description: "Occupancy changed successfully." });
       setIsChangeRoomOpen(false);
       setNewRoomId("");
@@ -111,7 +113,7 @@ export default function HostellerDetailPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => apiClient.delete(`/hostellers/${hostellerId}`, { "x-hostel-slug": hostelSlug }),
+    mutationFn: () => apiClient.delete(`/hostellers/${actualHostellerId}`, { "x-hostel-slug": hostelSlug }),
     onSuccess: () => {
       toast({ title: "Success", description: "Hosteller deleted successfully." });
       router.push(`/${hostelSlug}/hostellers`);
@@ -131,20 +133,21 @@ export default function HostellerDetailPage() {
   const damagePaise = Math.max(0, Math.round((parseFloat(damageDeductions || "0") || 0) * 100));
 
   const { data: exitPreviewRes, isLoading: isLoadingPreview } = useQuery({
-    queryKey: ["exit-preview", hostelSlug, hostellerId, exitDate, exitType, damagePaise],
+    queryKey: ["exit-preview", hostelSlug, actualHostellerId, exitDate, exitType, damagePaise],
     queryFn: () => apiClient.get<any>(
-      `/exits/preview/${hostellerId}?exit_date=${exitDate}&exit_type=${exitType}&damage_deductions_paise=${damagePaise}`,
+      `/exits/preview/${actualHostellerId}?exit_date=${exitDate}&exit_type=${exitType}&damage_deductions_paise=${damagePaise}`,
       { "x-hostel-slug": hostelSlug }
     ),
-    enabled: isExitOpen && !!hostellerId,
+    enabled: isExitOpen && !!actualHostellerId,
   });
 
   const exitPreview = exitPreviewRes?.data ?? exitPreviewRes;
 
   const markExitPendingMutation = useMutation({
-    mutationFn: () => apiClient.post(`/exits/${hostellerId}/mark-pending`, {}, { "x-hostel-slug": hostelSlug }),
+    mutationFn: () => apiClient.post(`/exits/${actualHostellerId}/mark-pending`, {}, { "x-hostel-slug": hostelSlug }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["hosteller-details", hostellerId] });
+      queryClient.invalidateQueries({ queryKey: ["hosteller-details", actualHostellerId] });
       toast({ title: "Notice Recorded", description: "Hosteller marked as exit pending." });
     },
     onError: (err: any) => {
@@ -156,7 +159,7 @@ export default function HostellerDetailPage() {
     mutationFn: () => apiClient.post(
       "/exits",
       {
-        hosteller_id: hostellerId,
+        hosteller_id: actualHostellerId,
         exit_date: exitDate,
         exit_type: exitType,
         damage_deductions_paise: damagePaise,
@@ -166,6 +169,7 @@ export default function HostellerDetailPage() {
     ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["hosteller-details", hostellerId] });
+      queryClient.invalidateQueries({ queryKey: ["hosteller-details", actualHostellerId] });
       toast({ title: "Exit Settled", description: "Hosteller exit processed and deposit settled." });
       setIsExitOpen(false);
     },
