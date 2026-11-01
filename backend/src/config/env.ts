@@ -40,6 +40,10 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().default("Hosmos <noreply@hosmos.com>"),
+
+  // HTTPS Email API (Port 443 — required on platforms like Render Free tier that block SMTP ports 25, 465, 587)
+  BREVO_API_KEY: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -30,6 +30,9 @@ function getTransporter(): Transporter {
     if (isGmail) {
       transporter = nodemailer.createTransport({
         service: "gmail",
+        connectionTimeout: 6000,
+        greetingTimeout: 6000,
+        socketTimeout: 6000,
         auth: {
           user: env.SMTP_USER,
           pass: env.SMTP_PASS,
@@ -40,6 +43,9 @@ function getTransporter(): Transporter {
         host: env.SMTP_HOST || "smtp.gmail.com",
         port: env.SMTP_PORT,
         secure: env.SMTP_SECURE || env.SMTP_PORT === 465,
+        connectionTimeout: 6000,
+        greetingTimeout: 6000,
+        socketTimeout: 6000,
         auth: {
           user: env.SMTP_USER,
           pass: env.SMTP_PASS,
@@ -59,9 +65,107 @@ function getTransporter(): Transporter {
 }
 
 /**
- * Sends an email using the configured Nodemailer transport.
+ * Sends an email via Brevo's REST API over HTTPS (Port 443).
+ * Ideal for cloud platforms (e.g. Render Free tier) where SMTP ports 25, 465, 587 are blocked.
+ */
+async function sendViaBrevo(apiKey: string, options: SendMailOptions): Promise<boolean> {
+  const senderEmail =
+    env.SMTP_USER ||
+    (env.EMAIL_FROM.includes("<")
+      ? env.EMAIL_FROM.match(/<([^>]+)>/)?.[1]
+      : env.EMAIL_FROM) ||
+    "noreply@hosmos.com";
+
+  const senderName = env.EMAIL_FROM.includes("<")
+    ? (env.EMAIL_FROM.split("<")[0]?.trim() || "Hosmos")
+    : "Hosmos";
+
+  try {
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "api-key": apiKey,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: { name: senderName, email: senderEmail },
+        to: [{ email: options.to }],
+        subject: options.subject,
+        htmlContent: options.html,
+        textContent: options.text,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`[MAILER] Brevo API error (${res.status}):`, errorText);
+      return false;
+    }
+
+    const data = (await res.json()) as { messageId?: string };
+    console.log(`[MAILER] Email successfully sent via Brevo to ${options.to}: ${data.messageId || "ok"}`);
+    return true;
+  } catch (error) {
+    console.error(`[MAILER] Failed to send email via Brevo to ${options.to}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Sends an email via Resend's REST API over HTTPS (Port 443).
+ */
+async function sendViaResend(apiKey: string, options: SendMailOptions): Promise<boolean> {
+  const from =
+    env.EMAIL_FROM && !env.EMAIL_FROM.includes("noreply@hosmos.com")
+      ? env.EMAIL_FROM
+      : "Hosmos <onboarding@resend.dev>";
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [options.to],
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`[MAILER] Resend API error (${res.status}):`, errorText);
+      return false;
+    }
+
+    const data = (await res.json()) as { id?: string };
+    console.log(`[MAILER] Email successfully sent via Resend to ${options.to}: ${data.id || "ok"}`);
+    return true;
+  } catch (error) {
+    console.error(`[MAILER] Failed to send email via Resend to ${options.to}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Sends an email using Brevo/Resend HTTPS APIs if configured, otherwise falls back to Nodemailer SMTP.
  */
 export async function sendEmail(options: SendMailOptions): Promise<boolean> {
+  // 1. Prefer HTTPS API providers (port 443) — immune to cloud host SMTP firewalls
+  if (env.BREVO_API_KEY) {
+    return sendViaBrevo(env.BREVO_API_KEY, options);
+  }
+
+  if (env.RESEND_API_KEY) {
+    return sendViaResend(env.RESEND_API_KEY, options);
+  }
+
+  // 2. SMTP fallback
   const mailer = getTransporter();
   const hasRealSmtp = Boolean(env.SMTP_USER && env.SMTP_PASS);
 

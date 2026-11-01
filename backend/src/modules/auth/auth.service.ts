@@ -247,7 +247,11 @@ export const authService = {
     console.log(`   Valid For: 10 minutes`);
     console.log(`========================================================\n`);
 
-    await sendOtpEmail(normalizedEmail, hosteller.name, rawOtp, 10);
+    try {
+      await sendOtpEmail(normalizedEmail, hosteller.name, rawOtp, 10);
+    } catch (err) {
+      console.error(`[AUTH] Failed to send registration OTP email to ${normalizedEmail}:`, err);
+    }
 
     return {
       message: `A 6-digit verification code has been sent to ${normalizedEmail}`,
@@ -555,7 +559,11 @@ export const authService = {
     console.log(`   Valid For: 10 minutes`);
     console.log(`========================================================\n`);
 
-    await sendPasswordResetOtpEmail(normalizedEmail, userRecord.name, rawOtp, 10);
+    try {
+      await sendPasswordResetOtpEmail(normalizedEmail, userRecord.name, rawOtp, 10);
+    } catch (err) {
+      console.error(`[AUTH] Failed to send password reset OTP email to ${normalizedEmail}:`, err);
+    }
 
     return {
       message: "If an account with that email exists, a verification code has been sent.",
