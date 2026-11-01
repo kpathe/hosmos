@@ -25,6 +25,14 @@ const envSchema = z.object({
   CORS_ALLOWED_ORIGINS: z.string().default("http://localhost:3000"),
 
   COOKIE_DOMAIN: z.string().default("localhost"),
+
+  // SMTP Email Settings (optional; logs to console if omitted)
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_SECURE: z.coerce.boolean().default(false),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  EMAIL_FROM: z.string().default("Hosmos <noreply@hosmos.com>"),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -15,6 +15,7 @@ import {
   hashOtp,
 } from "../../utils/crypto.js";
 import { AuthenticationError, AuthorizationError, NotFoundError, ValidationError } from "../../utils/errors.js";
+import { sendOtpEmail } from "../../utils/mailer.js";
 import { env } from "../../config/env.js";
 import type {
   LoginOwnerRequest,
@@ -236,13 +237,15 @@ export const authService = {
       expiresAt,
     });
 
-    // 6. Deliver OTP: log to console (and ready for email delivery)
+    // 6. Deliver OTP: dispatch via Nodemailer & log to console
     console.log(`\n========================================================`);
     console.log(`🔑 [HOSTELLER REGISTRATION OTP]`);
     console.log(`   To: ${normalizedEmail} (${hosteller.name})`);
     console.log(`   OTP Code: ${rawOtp}`);
     console.log(`   Valid For: 10 minutes`);
     console.log(`========================================================\n`);
+
+    await sendOtpEmail(normalizedEmail, hosteller.name, rawOtp, 10);
 
     return {
       message: `A 6-digit verification code has been sent to ${normalizedEmail}`,
