@@ -29,7 +29,14 @@ const envSchema = z.object({
   // SMTP Email Settings (optional; logs to console if omitted)
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().default(587),
-  SMTP_SECURE: z.coerce.boolean().default(false),
+  SMTP_SECURE: z
+    .union([z.boolean(), z.string()])
+    .optional()
+    .transform((val) => {
+      if (typeof val === "boolean") return val;
+      if (typeof val === "string") return val.trim().toLowerCase() === "true" || val.trim() === "1";
+      return false;
+    }),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().default("Hosmos <noreply@hosmos.com>"),

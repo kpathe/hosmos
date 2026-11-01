@@ -22,16 +22,30 @@ let transporter: Transporter | null = null;
 function getTransporter(): Transporter {
   if (transporter) return transporter;
 
-  if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
-    transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_SECURE,
-      auth: {
-        user: env.SMTP_USER,
-        pass: env.SMTP_PASS,
-      },
-    });
+  if (env.SMTP_USER && env.SMTP_PASS) {
+    const isGmail =
+      env.SMTP_HOST?.toLowerCase().includes("gmail") ||
+      env.SMTP_USER.toLowerCase().includes("@gmail.com");
+
+    if (isGmail) {
+      transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: env.SMTP_USER,
+          pass: env.SMTP_PASS,
+        },
+      });
+    } else {
+      transporter = nodemailer.createTransport({
+        host: env.SMTP_HOST || "smtp.gmail.com",
+        port: env.SMTP_PORT,
+        secure: env.SMTP_SECURE || env.SMTP_PORT === 465,
+        auth: {
+          user: env.SMTP_USER,
+          pass: env.SMTP_PASS,
+        },
+      });
+    }
   } else {
     // Development fallback: stream transport
     transporter = nodemailer.createTransport({
@@ -49,11 +63,17 @@ function getTransporter(): Transporter {
  */
 export async function sendEmail(options: SendMailOptions): Promise<boolean> {
   const mailer = getTransporter();
-  const hasRealSmtp = Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
+  const hasRealSmtp = Boolean(env.SMTP_USER && env.SMTP_PASS);
+
+  // When using Gmail SMTP, align sender with the authenticated mailbox to ensure high deliverability
+  const fromAddress =
+    env.SMTP_USER && (env.SMTP_USER.includes("@gmail.com") || env.EMAIL_FROM.includes("noreply@hosmos.com"))
+      ? `Hosmos <${env.SMTP_USER}>`
+      : env.EMAIL_FROM;
 
   try {
     const info = await mailer.sendMail({
-      from: env.EMAIL_FROM,
+      from: fromAddress,
       to: options.to,
       subject: options.subject,
       text: options.text,
