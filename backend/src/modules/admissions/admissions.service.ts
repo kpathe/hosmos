@@ -97,41 +97,77 @@ export class AdmissionsService {
         createdBy,
       });
 
-      // 6. Calculate prorated rent & future advance allocations
-      // Advance months specifies total months of rent paid upfront (including admission month).
-      // e.g. advance_months = 3 means: Admission Month (1) + Next 2 Months (2) = 3 months total rent.
-      const proratedRent = payload.advance_months > 0
-        ? calculateProratedRent(row.pricingModel.monthlyAmountPaise, payload.admission_date)
-        : 0;
-
-      const futureAdvanceMonths = Math.max(0, payload.advance_months - 1);
+      // 6. Calculate Option C Rolling Advance Rent & Allocations
+      // The student pays flat advance_months * monthlyAmount at admission.
+      // E.g. advance_months = 3 means: 3 * 3,000 = 9,000 total rent + deposit = 14,000 flat.
       const monthlyAmountPaise = row.pricingModel.monthlyAmountPaise;
-      const totalFutureAdvanceRent = futureAdvanceMonths * monthlyAmountPaise;
+      const totalAdvanceRentPaise = payload.advance_months * monthlyAmountPaise;
 
       const admissionDate = new Date(payload.admission_date);
       const billYear = admissionDate.getFullYear();
       const billMonth = admissionDate.getMonth() + 1;
+      const admissionDay = admissionDate.getDate();
+      const daysInMonth = getDaysInMonth(billYear, billMonth);
 
       const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const advanceAllocationsToInsert = [];
       const futureMonthLabels: string[] = [];
 
-      let currentMonth = billMonth;
-      let currentYear = billYear;
-      for (let i = 0; i < futureAdvanceMonths; i++) {
-        currentMonth++;
-        if (currentMonth > 12) {
-          currentMonth = 1;
-          currentYear++;
+      let currentMonthRentPaise = 0;
+      let futureAdvanceRentPaise = 0;
+
+      if (payload.advance_months > 0) {
+        if (admissionDay === 1) {
+          // Aligned to 1st of month
+          currentMonthRentPaise = monthlyAmountPaise;
+          futureAdvanceRentPaise = (payload.advance_months - 1) * monthlyAmountPaise;
+
+          let curM = billMonth;
+          let curY = billYear;
+          for (let i = 0; i < payload.advance_months - 1; i++) {
+            curM++;
+            if (curM > 12) {
+              curM = 1;
+              curY++;
+            }
+            advanceAllocationsToInsert.push({
+              hostellerId: hosteller.id,
+              hostelId,
+              billingPeriodYear: curY,
+              billingPeriodMonth: curM,
+              amountPaise: monthlyAmountPaise,
+            });
+            futureMonthLabels.push(`${MONTH_NAMES[curM - 1]} ${curY}`);
+          }
+        } else {
+          // Mid-month admission: Option C (Rolling Date-to-Date Period)
+          // Rent upfront is exactly totalAdvanceRentPaise.
+          const daysApplicable = daysInMonth - (admissionDay - 1);
+          currentMonthRentPaise = Math.round((monthlyAmountPaise / daysInMonth) * daysApplicable);
+          futureAdvanceRentPaise = totalAdvanceRentPaise - currentMonthRentPaise;
+
+          let remainingAdvanceToAllocate = futureAdvanceRentPaise;
+          let curM = billMonth;
+          let curY = billYear;
+
+          while (remainingAdvanceToAllocate > 0) {
+            curM++;
+            if (curM > 12) {
+              curM = 1;
+              curY++;
+            }
+            const allocAmount = Math.min(monthlyAmountPaise, remainingAdvanceToAllocate);
+            advanceAllocationsToInsert.push({
+              hostellerId: hosteller.id,
+              hostelId,
+              billingPeriodYear: curY,
+              billingPeriodMonth: curM,
+              amountPaise: allocAmount,
+            });
+            futureMonthLabels.push(`${MONTH_NAMES[curM - 1]} ${curY}`);
+            remainingAdvanceToAllocate -= allocAmount;
+          }
         }
-        advanceAllocationsToInsert.push({
-          hostellerId: hosteller.id,
-          hostelId,
-          billingPeriodYear: currentYear,
-          billingPeriodMonth: currentMonth,
-          amountPaise: monthlyAmountPaise,
-        });
-        futureMonthLabels.push(`${MONTH_NAMES[currentMonth - 1]} ${currentYear}`);
       }
 
       // 7. Prepare bill items
@@ -141,24 +177,22 @@ export class AdmissionsService {
         amountPaise: number;
       }[] = [];
 
-      if (proratedRent > 0) {
-        const admissionDay = admissionDate.getDate();
-        const daysInMonth = getDaysInMonth(billYear, billMonth);
+      if (currentMonthRentPaise > 0) {
         const desc = admissionDay === 1
           ? `Rent — Admission Month (${MONTH_NAMES[billMonth - 1]} ${billYear})`
           : `Rent — Admission Month (Prorated: ${daysInMonth - admissionDay + 1}/${daysInMonth} days)`;
         itemsToInsert.push({
           itemType: "rent",
           description: desc,
-          amountPaise: proratedRent,
+          amountPaise: currentMonthRentPaise,
         });
       }
 
-      if (totalFutureAdvanceRent > 0) {
+      if (futureAdvanceRentPaise > 0) {
         itemsToInsert.push({
           itemType: "rent",
-          description: `Advance Rent (${futureAdvanceMonths} month${futureAdvanceMonths > 1 ? "s" : ""}: ${futureMonthLabels.join(", ")})`,
-          amountPaise: totalFutureAdvanceRent,
+          description: `Advance Rent (${futureMonthLabels.join(", ")})`,
+          amountPaise: futureAdvanceRentPaise,
         });
       }
 
