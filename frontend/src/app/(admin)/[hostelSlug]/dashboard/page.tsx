@@ -6,7 +6,7 @@ import type { HostelDto, RoomDto, ManagerDto, PricingModelDto } from "@hosmos/ty
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Building, Bed, Users, CreditCard, Activity } from "lucide-react";
+import { Building, Bed, Users, CreditCard, Activity, Zap, ShieldCheck, Receipt, Gauge } from "lucide-react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -124,13 +124,47 @@ export default function HostelDashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+            <CardTitle>Property Configuration</CardTitle>
             <CardDescription>
-              Activity overview will be displayed here in future updates.
+              Billing and operational parameters configured for {hostel.name}.
             </CardDescription>
           </CardHeader>
-          <CardContent className="pl-2 flex justify-center items-center h-64 border-t">
-             <p className="text-muted-foreground text-sm">No recent activity</p>
+          <CardContent className="space-y-4 pt-1">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-xl border bg-muted/30 p-4 space-y-1">
+                <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                  <Zap className="h-4 w-4 text-amber-500" /> Electricity Rate
+                </span>
+                <p className="text-xl font-bold text-foreground">
+                  ₹{(hostel.electricity_rate_paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                  <span className="text-xs font-normal text-muted-foreground ml-1">/ unit</span>
+                </p>
+                <p className="text-[11px] text-muted-foreground">Meter readings split across room occupants</p>
+              </div>
+
+              <div className="rounded-xl border bg-muted/30 p-4 space-y-1">
+                <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" /> Security Deposit
+                </span>
+                <p className="text-xl font-bold text-foreground">
+                  ₹{(hostel.security_deposit_amount_paise / 100).toLocaleString("en-IN")}
+                </p>
+                <p className="text-[11px] text-muted-foreground">Standard refundable admission deposit</p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border p-4 bg-muted/10 space-y-2">
+              <div className="flex items-center justify-between text-xs font-medium">
+                <span className="text-muted-foreground">Total Bed Capacity Utilization</span>
+                <span className="text-foreground font-bold">{totalOccupied} / {totalCapacity} Beds ({occupancyRate}%)</span>
+              </div>
+              <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary rounded-full transition-all duration-500" 
+                  style={{ width: `${Math.min(100, occupancyRate)}%` }}
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
         
@@ -140,20 +174,34 @@ export default function HostelDashboardPage() {
             <CardDescription>Common management tasks</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <Link 
                 href={`/${hostelSlug}/admissions/new`}
-                className={buttonVariants({ variant: "outline", className: "w-full justify-start text-left font-normal" })}
+                className={buttonVariants({ variant: "outline", className: "w-full justify-start text-left font-normal text-xs" })}
               >
                 <Users className="mr-2 h-4 w-4" />
                 Admit Hosteller
               </Link>
               <Link 
                 href={`/${hostelSlug}/rooms`}
-                className={buttonVariants({ variant: "outline", className: "w-full justify-start text-left font-normal" })}
+                className={buttonVariants({ variant: "outline", className: "w-full justify-start text-left font-normal text-xs" })}
               >
                 <Bed className="mr-2 h-4 w-4" />
                 Manage Rooms
+              </Link>
+              <Link 
+                href={`/${hostelSlug}/billing`}
+                className={buttonVariants({ variant: "outline", className: "w-full justify-start text-left font-normal text-xs" })}
+              >
+                <Receipt className="mr-2 h-4 w-4" />
+                Generate Bills
+              </Link>
+              <Link 
+                href={`/${hostelSlug}/meters`}
+                className={buttonVariants({ variant: "outline", className: "w-full justify-start text-left font-normal text-xs" })}
+              >
+                <Gauge className="mr-2 h-4 w-4" />
+                Sub-Meters
               </Link>
             </div>
           </CardContent>

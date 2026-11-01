@@ -72,11 +72,13 @@ export function createApp(): express.Application {
   app.use("/api/v1/exits", exitsRouter);
   app.use("/api/v1/portal", portalRouter);
 
-  if (isDevelopment) {
-    app.get("/api/v1", (_req, res) => {
-      res.json({ message: "Hosmos API — Phase 0 scaffold ready. Routes coming in Phase 1." });
+  app.get("/api/v1", (_req, res) => {
+    res.json({
+      name: "Hosmos API",
+      version: "1.0.0",
+      status: "online",
     });
-  }
+  });
 
   // ── 404 Handler ─────────────────────────────────────────────────────────────
   app.use((_req, res) => {

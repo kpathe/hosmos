@@ -193,22 +193,22 @@ export default function GlobalDashboardPage() {
         <Card className="border-border/60 hover:shadow-sm transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Account Role
+              Resident Access
             </CardTitle>
             <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-              <ShieldCheck className="h-4 w-4" />
+              <Users className="h-4 w-4" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-extrabold capitalize">{user?.role || "Owner"}</div>
-            <p className="text-xs text-muted-foreground mt-1">Full administrative access</p>
+            <div className="text-3xl font-extrabold text-emerald-600">Active</div>
+            <p className="text-xs text-muted-foreground mt-1">Resident self-service portal</p>
           </CardContent>
         </Card>
 
         <Card className="border-border/60 hover:shadow-sm transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Billing Cycles
+              Automated Billing
             </CardTitle>
             <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600">
               <Receipt className="h-4 w-4" />
@@ -216,22 +216,22 @@ export default function GlobalDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-extrabold">Active</div>
-            <p className="text-xs text-muted-foreground mt-1">Rent & Electricity automated</p>
+            <p className="text-xs text-muted-foreground mt-1">Rent & utility calculations</p>
           </CardContent>
         </Card>
 
         <Card className="border-border/60 hover:shadow-sm transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              System Status
+              Account Access
             </CardTitle>
             <div className="h-8 w-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600">
-              <TrendingUp className="h-4 w-4" />
+              <ShieldCheck className="h-4 w-4" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-extrabold text-emerald-600">Healthy</div>
-            <p className="text-xs text-muted-foreground mt-1">Multi-tenant isolation active</p>
+            <div className="text-3xl font-extrabold capitalize">{user?.role || "Owner"}</div>
+            <p className="text-xs text-muted-foreground mt-1">Role-based access control</p>
           </CardContent>
         </Card>
       </div>
