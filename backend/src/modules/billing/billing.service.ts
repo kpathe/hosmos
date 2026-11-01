@@ -39,6 +39,18 @@ function mapBillToDto(bill: typeof bills.$inferSelect, hostellerName: string, it
 
 export class BillingService {
   async generateMonthlyBills(hostelId: string, year: number, month: number, userId: string) {
+    // Prevent generating bills for future periods
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    if (year > currentYear || (year === currentYear && month > currentMonth)) {
+      throw new BusinessRuleError(
+        "FUTURE_BILLING_NOT_ALLOWED",
+        "Generating bills for future months is not allowed. Bills can only be generated for current or past periods."
+      );
+    }
+
     // 1. Get all eligible hostellers
     const eligibleHostellers = await db
       .select({ id: hostellers.id })

@@ -221,19 +221,27 @@ export default function BillingPage() {
           <DialogHeader>
             <DialogTitle>Generate Monthly Bills</DialogTitle>
             <DialogDescription>
-              This will create rent bills for all active hostellers for the selected month.
-              Hostellers with advance rent covering this period will not be charged rent.
+              Create rent bills for all active hostellers for current or past periods. Generating bills for future months is not allowed.
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
               <Label>Year</Label>
-              <Select value={genYear} onValueChange={(val) => setGenYear(val as string)}>
+              <Select 
+                value={genYear} 
+                onValueChange={(val) => {
+                  const y = val as string;
+                  setGenYear(y);
+                  if (Number(y) === currentYear && Number(genMonth) > currentMonth) {
+                    setGenMonth(currentMonth.toString());
+                  }
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[currentYear - 1, currentYear, currentYear + 1].map(y => (
+                  {[currentYear - 1, currentYear].map(y => (
                     <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
                   ))}
                 </SelectContent>
@@ -246,9 +254,11 @@ export default function BillingPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                    <SelectItem key={m} value={m.toString()}>{MONTHS[m]}</SelectItem>
-                  ))}
+                  {Array.from({ length: 12 }, (_, i) => i + 1)
+                    .filter(m => Number(genYear) < currentYear || m <= currentMonth)
+                    .map(m => (
+                      <SelectItem key={m} value={m.toString()}>{MONTHS[m]}</SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
