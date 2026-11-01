@@ -84,6 +84,8 @@ export default function NewAdmissionPage() {
     },
   });
 
+  const selectedRoom = availableRooms.find(r => r.id === form.watch("room_id"));
+
   const admissionMutation = useMutation({
     mutationFn: (data: any) => apiClient.post<CreateAdmissionRequest, AdmissionResultDto>("/admissions", {
       ...data,
@@ -273,13 +275,46 @@ export default function NewAdmissionPage() {
             <div className="space-y-2">
               <Label htmlFor="security_deposit_amount_rupees">Security Deposit (₹) *</Label>
               <Input id="security_deposit_amount_rupees" type="number" {...form.register("security_deposit_amount_rupees")} />
-              <p className="text-xs text-muted-foreground">Amount in INR. Held until exit.</p>
+              <p className="text-xs text-muted-foreground">One-time deposit held until tenant exit.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="advance_months">Advance Rent (Months) *</Label>
               <Input id="advance_months" type="number" {...form.register("advance_months")} />
-              <p className="text-xs text-muted-foreground">Number of future months to prepay (default 3).</p>
+              <p className="text-xs text-muted-foreground">Total rent months collected upfront (covers admission month + upcoming months).</p>
             </div>
+
+            {/* Live Calculation Breakdown */}
+            {selectedRoom && (
+              <div className="col-span-1 md:col-span-2 bg-muted/40 p-4 rounded-lg border border-border/50">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Admission Amount Summary</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Monthly Rent</p>
+                    <p className="font-semibold text-foreground">₹{((selectedRoom.pricing_model?.monthly_amount_paise || 0) / 100).toLocaleString("en-IN")}/mo</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Rent ({form.watch("advance_months") || 0} mo)</p>
+                    <p className="font-semibold text-foreground">
+                      ₹{(((selectedRoom.pricing_model?.monthly_amount_paise || 0) / 100) * (form.watch("advance_months") || 0)).toLocaleString("en-IN")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Security Deposit</p>
+                    <p className="font-semibold text-foreground">₹{(Number(form.watch("security_deposit_amount_rupees")) || 0).toLocaleString("en-IN")}</p>
+                  </div>
+                  <div className="bg-primary/10 -m-2 p-2 rounded-md">
+                    <p className="text-xs font-medium text-primary">Total Bill & Payment</p>
+                    <p className="text-lg font-bold text-primary">
+                      ₹{(
+                        (((selectedRoom.pricing_model?.monthly_amount_paise || 0) / 100) * (form.watch("advance_months") || 0)) +
+                        (Number(form.watch("security_deposit_amount_rupees")) || 0)
+                      ).toLocaleString("en-IN")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="col-span-1 md:col-span-2 border-t pt-6 mt-2 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="payment_date">Payment Date *</Label>

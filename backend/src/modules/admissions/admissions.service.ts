@@ -97,65 +97,28 @@ export class AdmissionsService {
         createdBy,
       });
 
-      // 6. Calculate prorated rent
-      const proratedRent = calculateProratedRent(row.pricingModel.monthlyAmountPaise, payload.admission_date);
-      
-      // 7. Create admission bill
+      // 6. Calculate prorated rent & future advance allocations
+      // Advance months specifies total months of rent paid upfront (including admission month).
+      // e.g. advance_months = 3 means: Admission Month (1) + Next 2 Months (2) = 3 months total rent.
+      const proratedRent = payload.advance_months > 0
+        ? calculateProratedRent(row.pricingModel.monthlyAmountPaise, payload.admission_date)
+        : 0;
+
+      const futureAdvanceMonths = Math.max(0, payload.advance_months - 1);
+      const monthlyAmountPaise = row.pricingModel.monthlyAmountPaise;
+      const totalFutureAdvanceRent = futureAdvanceMonths * monthlyAmountPaise;
+
       const admissionDate = new Date(payload.admission_date);
       const billYear = admissionDate.getFullYear();
       const billMonth = admissionDate.getMonth() + 1;
-      
-      const totalBillAmount = proratedRent + payload.security_deposit_amount_paise;
-      
-      const [bill] = await tx.insert(bills).values({
-        hostelId,
-        hostellerId: hosteller.id,
-        billingPeriodYear: billYear,
-        billingPeriodMonth: billMonth,
-        status: "paid", // Paid at admission
-        totalAmountPaise: totalBillAmount,
-        paidAt: sql`NOW()`,
-        createdBy,
-      }).returning();
-      
-      if (!bill) throw new Error("Failed to create bill");
 
-      // 8. Create bill items
-      const createdItems = await tx.insert(billItems).values([
-        {
-          billId: bill.id,
-          hostelId,
-          itemType: "rent",
-          description: `Admission rent (prorated)`,
-          amountPaise: proratedRent,
-          createdBy,
-        },
-        {
-          billId: bill.id,
-          hostelId,
-          itemType: "security_deposit",
-          description: `Security deposit collected`,
-          amountPaise: payload.security_deposit_amount_paise,
-          createdBy,
-        }
-      ]).returning();
-
-      // 9. Create security deposit record
-      const [securityDeposit] = await tx.insert(securityDeposits).values({
-        hostellerId: hosteller.id,
-        hostelId,
-        originalAmountPaise: payload.security_deposit_amount_paise,
-        status: "held",
-        createdBy,
-      }).returning();
-      
-      if (!securityDeposit) throw new Error("Failed to create security deposit");
-
-      // 10. Advance rent allocations
+      const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const advanceAllocationsToInsert = [];
+      const futureMonthLabels: string[] = [];
+
       let currentMonth = billMonth;
       let currentYear = billYear;
-      for (let i = 0; i < payload.advance_months; i++) {
+      for (let i = 0; i < futureAdvanceMonths; i++) {
         currentMonth++;
         if (currentMonth > 12) {
           currentMonth = 1;
@@ -166,18 +129,93 @@ export class AdmissionsService {
           hostelId,
           billingPeriodYear: currentYear,
           billingPeriodMonth: currentMonth,
-          amountPaise: row.pricingModel.monthlyAmountPaise,
+          amountPaise: monthlyAmountPaise,
+        });
+        futureMonthLabels.push(`${MONTH_NAMES[currentMonth - 1]} ${currentYear}`);
+      }
+
+      // 7. Prepare bill items
+      const itemsToInsert: {
+        itemType: "rent" | "security_deposit";
+        description: string;
+        amountPaise: number;
+      }[] = [];
+
+      if (proratedRent > 0) {
+        const admissionDay = admissionDate.getDate();
+        const daysInMonth = getDaysInMonth(billYear, billMonth);
+        const desc = admissionDay === 1
+          ? `Rent — Admission Month (${MONTH_NAMES[billMonth - 1]} ${billYear})`
+          : `Rent — Admission Month (Prorated: ${daysInMonth - admissionDay + 1}/${daysInMonth} days)`;
+        itemsToInsert.push({
+          itemType: "rent",
+          description: desc,
+          amountPaise: proratedRent,
         });
       }
-      
+
+      if (totalFutureAdvanceRent > 0) {
+        itemsToInsert.push({
+          itemType: "rent",
+          description: `Advance Rent (${futureAdvanceMonths} month${futureAdvanceMonths > 1 ? "s" : ""}: ${futureMonthLabels.join(", ")})`,
+          amountPaise: totalFutureAdvanceRent,
+        });
+      }
+
+      if (payload.security_deposit_amount_paise > 0) {
+        itemsToInsert.push({
+          itemType: "security_deposit",
+          description: "Security deposit collected",
+          amountPaise: payload.security_deposit_amount_paise,
+        });
+      }
+
+      const totalBillAmount = itemsToInsert.reduce((sum, item) => sum + item.amountPaise, 0);
+
+      // 8. Create admission bill
+      const [bill] = await tx.insert(bills).values({
+        hostelId,
+        hostellerId: hosteller.id,
+        billingPeriodYear: billYear,
+        billingPeriodMonth: billMonth,
+        status: "paid", // Paid at admission
+        totalAmountPaise: totalBillAmount,
+        paidAt: sql`NOW()`,
+        createdBy,
+      }).returning();
+
+      if (!bill) throw new Error("Failed to create bill");
+
+      const createdItems = await tx.insert(billItems).values(
+        itemsToInsert.map(item => ({
+          ...item,
+          billId: bill.id,
+          hostelId,
+          createdBy,
+        }))
+      ).returning();
+
+      // 9. Create security deposit record
+      let securityDeposit: any = null;
+      if (payload.security_deposit_amount_paise > 0) {
+        const [sd] = await tx.insert(securityDeposits).values({
+          hostellerId: hosteller.id,
+          hostelId,
+          originalAmountPaise: payload.security_deposit_amount_paise,
+          status: "held",
+          createdBy,
+        }).returning();
+        securityDeposit = sd;
+      }
+
+      // 10. Insert advance allocations for future prepaid months
       let insertedAllocations: any[] = [];
       if (advanceAllocationsToInsert.length > 0) {
         insertedAllocations = await tx.insert(advanceRentAllocations).values(advanceAllocationsToInsert).returning();
       }
 
-      // 11. Create payment record
-      // Payment total = totalBillAmount + (advance_months * monthlyAmount)
-      const paymentTotal = totalBillAmount + (payload.advance_months * row.pricingModel.monthlyAmountPaise);
+      // 11. Create payment record (payment exactly matches totalBillAmount)
+      const paymentTotal = totalBillAmount;
       const [payment] = await tx.insert(payments).values({
         hostelId,
         hostellerId: hosteller.id,
@@ -190,7 +228,7 @@ export class AdmissionsService {
         reference: payload.payment_reference || null,
         createdBy,
       }).returning();
-      
+
       if (!payment) throw new Error("Failed to create payment");
 
       if (insertedAllocations.length > 0) {
