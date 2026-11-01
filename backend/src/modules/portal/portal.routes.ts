@@ -14,3 +14,4 @@ router.get("/bills", portalController.getBills.bind(portalController));
 router.get("/payments", portalController.getPayments.bind(portalController));
 
 export { router as portalRouter };
+

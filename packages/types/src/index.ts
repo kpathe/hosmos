@@ -80,8 +80,18 @@ export interface LoginHostellerRequest {
   password_plain: string;
 }
 
+export interface SendHostellerOtpRequest {
+  email: string;
+}
+
+export interface SendHostellerOtpResponse {
+  message: string;
+  cooldown_seconds: number;
+}
+
 export interface RegisterHostellerRequest {
   email: string; // Used to look up the admitted record
+  otp: string; // 6-digit numeric OTP sent to the email
   password_plain: string;
 }
 

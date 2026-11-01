@@ -50,6 +50,24 @@ export function hashRefreshToken(rawToken: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// OTP Generation and Hashing
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Generates a cryptographically random 6-digit numeric OTP (100000-999999).
+ */
+export function generateNumericOtp(): string {
+  return crypto.randomInt(100000, 1000000).toString();
+}
+
+/**
+ * Hashes an OTP using SHA-256 for secure database storage.
+ */
+export function hashOtp(otp: string): string {
+  return crypto.createHash("sha256").update(otp).digest("hex");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // JWT
 // ─────────────────────────────────────────────────────────────────────────────
 

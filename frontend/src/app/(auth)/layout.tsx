@@ -16,12 +16,6 @@ export default function AuthLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Hosmos</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Hostel Management Platform
-        </p>
-      </div>
       {children}
     </div>
   );

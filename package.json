@@ -17,7 +17,8 @@
     "test": "npm run test --workspaces --if-present",
     "db:generate": "npm run db:generate --workspace=backend",
     "db:migrate": "npm run db:migrate --workspace=backend",
-    "db:studio": "npm run db:studio --workspace=backend"
+    "db:studio": "npm run db:studio --workspace=backend",
+    "seed:owner": "npm run seed:owner --workspace=backend"
   },
   "engines": {
     "node": ">=20.0.0",

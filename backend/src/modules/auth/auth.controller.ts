@@ -36,6 +36,15 @@ export const authController = {
     }
   },
 
+  sendHostellerOtp: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await authService.sendHostellerRegistrationOtp(req.body.email);
+      res.json({ data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   registerHosteller: async (req: Request, res: Response, next: NextFunction) => {
     try {
       await authService.registerHosteller(req.body);

@@ -1,15 +1,18 @@
-import { eq, and, or, isNull, gt } from "drizzle-orm";
+import { eq, and, or, isNull, gt, desc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { owners, Owner } from "../../db/schema/owners.js";
 import { managers, Manager } from "../../db/schema/managers.js";
 import { hostellers, Hosteller } from "../../db/schema/hostellers.js";
 import { refreshTokens, RefreshToken } from "../../db/schema/refresh-tokens.js";
+import { otps } from "../../db/schema/otps.js";
 import {
   verifyPassword,
   hashPassword,
   generateRefreshToken,
   hashRefreshToken,
   signAccessToken,
+  generateNumericOtp,
+  hashOtp,
 } from "../../utils/crypto.js";
 import { AuthenticationError, AuthorizationError, NotFoundError, ValidationError } from "../../utils/errors.js";
 import { env } from "../../config/env.js";
@@ -18,6 +21,7 @@ import type {
   LoginManagerRequest,
   LoginHostellerRequest,
   RegisterHostellerRequest,
+  SendHostellerOtpResponse,
   ChangePasswordRequest,
   LoginResponse,
   UserRole,
@@ -154,11 +158,107 @@ export const authService = {
 
   // ─── Registration ──────────────────────────────────────────────────────────
 
-  async registerHosteller(input: RegisterHostellerRequest): Promise<void> {
+  async sendHostellerRegistrationOtp(email: string): Promise<SendHostellerOtpResponse> {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // 1. Verify that hosteller exists
     const [hosteller] = await db
       .select()
       .from(hostellers)
-      .where(eq(hostellers.email, input.email));
+      .where(eq(hostellers.email, normalizedEmail));
+
+    if (!hosteller) {
+      throw new AuthenticationError("No admitted hosteller found with this email");
+    }
+
+    if (hosteller.status === "active") {
+      throw new ValidationError("Account is already active. Please log in directly.");
+    }
+
+    if (hosteller.status === "removed") {
+      throw new AuthenticationError("Account is inactive or removed");
+    }
+
+    if (hosteller.status !== "admitted") {
+      throw new ValidationError("Account is not eligible for portal registration");
+    }
+
+    // 2. Check cooldown on recent active OTP (60s cooldown)
+    const [recentOtp] = await db
+      .select()
+      .from(otps)
+      .where(
+        and(
+          eq(otps.email, normalizedEmail),
+          eq(otps.purpose, "hosteller_signup"),
+          isNull(otps.consumedAt),
+          gt(otps.expiresAt, new Date())
+        )
+      )
+      .orderBy(desc(otps.createdAt))
+      .limit(1);
+
+    if (recentOtp) {
+      const elapsedSeconds = Math.floor((Date.now() - new Date(recentOtp.createdAt).getTime()) / 1000);
+      const COOLDOWN_SECONDS = 60;
+      if (elapsedSeconds < COOLDOWN_SECONDS) {
+        return {
+          message: "Verification code was already sent recently. Please check your inbox or wait before retrying.",
+          cooldown_seconds: COOLDOWN_SECONDS - elapsedSeconds,
+        };
+      }
+    }
+
+    // 3. Generate 6-digit numeric OTP and hash
+    const rawOtp = generateNumericOtp();
+    const otpHash = hashOtp(rawOtp);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // 4. Invalidate any prior active OTPs for this email
+    await db
+      .update(otps)
+      .set({ consumedAt: new Date() })
+      .where(
+        and(
+          eq(otps.email, normalizedEmail),
+          eq(otps.purpose, "hosteller_signup"),
+          isNull(otps.consumedAt)
+        )
+      );
+
+    // 5. Insert new OTP
+    await db.insert(otps).values({
+      email: normalizedEmail,
+      otpHash,
+      purpose: "hosteller_signup",
+      attempts: 0,
+      maxAttempts: 5,
+      expiresAt,
+    });
+
+    // 6. Deliver OTP: log to console (and ready for email delivery)
+    console.log(`\n========================================================`);
+    console.log(`🔑 [HOSTELLER REGISTRATION OTP]`);
+    console.log(`   To: ${normalizedEmail} (${hosteller.name})`);
+    console.log(`   OTP Code: ${rawOtp}`);
+    console.log(`   Valid For: 10 minutes`);
+    console.log(`========================================================\n`);
+
+    return {
+      message: `A 6-digit verification code has been sent to ${normalizedEmail}`,
+      cooldown_seconds: 60,
+    };
+  },
+
+  async registerHosteller(input: RegisterHostellerRequest): Promise<void> {
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const otpCode = input.otp.trim();
+
+    // 1. Verify hosteller
+    const [hosteller] = await db
+      .select()
+      .from(hostellers)
+      .where(eq(hostellers.email, normalizedEmail));
 
     if (!hosteller) {
       throw new AuthenticationError("No admitted hosteller found with this email");
@@ -168,17 +268,68 @@ export const authService = {
       throw new AuthenticationError("Account is already registered or inactive");
     }
 
+    // 2. Find valid unconsumed OTP
+    const [activeOtp] = await db
+      .select()
+      .from(otps)
+      .where(
+        and(
+          eq(otps.email, normalizedEmail),
+          eq(otps.purpose, "hosteller_signup"),
+          isNull(otps.consumedAt),
+          gt(otps.expiresAt, new Date())
+        )
+      )
+      .orderBy(desc(otps.createdAt))
+      .limit(1);
 
-    const passwordHash = await hashPassword(input.password_plain);
+    if (!activeOtp) {
+      throw new ValidationError("Verification code expired or not found. Please request a new code.");
+    }
 
-    await db
-      .update(hostellers)
-      .set({
-        passwordHash,
-        status: "active",
-        updatedAt: new Date(),
-      })
-      .where(eq(hostellers.id, hosteller.id));
+    if (activeOtp.attempts >= activeOtp.maxAttempts) {
+      await db
+        .update(otps)
+        .set({ consumedAt: new Date() })
+        .where(eq(otps.id, activeOtp.id));
+      throw new ValidationError("Too many incorrect attempts. Please request a new verification code.");
+    }
+
+    // 3. Verify OTP Hash
+    const inputHash = hashOtp(otpCode);
+    if (inputHash !== activeOtp.otpHash) {
+      const nextAttempts = activeOtp.attempts + 1;
+      await db
+        .update(otps)
+        .set({ attempts: nextAttempts })
+        .where(eq(otps.id, activeOtp.id));
+
+      const remaining = activeOtp.maxAttempts - nextAttempts;
+      throw new ValidationError(
+        remaining > 0
+          ? `Invalid verification code. ${remaining} attempt(s) remaining.`
+          : "Invalid verification code. Maximum attempts exceeded. Please request a new code."
+      );
+    }
+
+    // 4. Mark OTP consumed and activate hosteller in transaction
+    await db.transaction(async (tx) => {
+      await tx
+        .update(otps)
+        .set({ consumedAt: new Date() })
+        .where(eq(otps.id, activeOtp.id));
+
+      const passwordHash = await hashPassword(input.password_plain);
+
+      await tx
+        .update(hostellers)
+        .set({
+          passwordHash,
+          status: "active",
+          updatedAt: new Date(),
+        })
+        .where(eq(hostellers.id, hosteller.id));
+    });
   },
 
   // ─── Token Rotation ────────────────────────────────────────────────────────

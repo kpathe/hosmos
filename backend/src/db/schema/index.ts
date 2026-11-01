@@ -7,7 +7,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Core tenant hierarchy
-// Core tenant hierarchy
 export * from "./owners";
 export * from "./hostels";
 export * from "./managers";
@@ -29,7 +28,7 @@ export * from "./meter-readings";
 
 // Authentication
 export * from "./refresh-tokens";
+export * from "./otps";
 
 // Relations (required for db.query.* relational API)
 export * from "./relations";
-

@@ -2,12 +2,10 @@ import { Router } from "express";
 import { z } from "zod";
 import { authController } from "./auth.controller.js";
 import { validateBody } from "../../middlewares/validate.middleware.js";
-import { authLoginLimiter, authRegisterLimiter, authRefreshLimiter } from "../../middlewares/rate-limit.middleware.js";
+import { authLoginLimiter, authRegisterLimiter, authRefreshLimiter, authOtpLimiter } from "../../middlewares/rate-limit.middleware.js";
 import { requireAuth } from "../../middlewares/auth.middleware.js";
 
 export const authRouter = Router();
-
-
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────
 
@@ -26,8 +24,13 @@ const loginHostellerSchema = z.object({
   password_plain: z.string().min(1, "Password is required"),
 });
 
+const sendOtpSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
 const registerHostellerSchema = z.object({
   email: z.string().email("Invalid email address"),
+  otp: z.string().length(6, "OTP must be exactly 6 digits").regex(/^\d+$/, "OTP must be numeric"),
   password_plain: z.string().min(8, "Password must be at least 8 characters"),
 });
 
@@ -41,6 +44,7 @@ const changePasswordSchema = z.object({
 authRouter.post("/login/owner", authLoginLimiter, validateBody(loginOwnerSchema), authController.loginOwner);
 authRouter.post("/login/manager", authLoginLimiter, validateBody(loginManagerSchema), authController.loginManager);
 authRouter.post("/login/hosteller", authLoginLimiter, validateBody(loginHostellerSchema), authController.loginHosteller);
+authRouter.post("/register/hosteller/send-otp", authOtpLimiter, validateBody(sendOtpSchema), authController.sendHostellerOtp);
 authRouter.post("/register/hosteller", authRegisterLimiter, validateBody(registerHostellerSchema), authController.registerHosteller);
 
 authRouter.post("/refresh", authRefreshLimiter, authController.refresh);

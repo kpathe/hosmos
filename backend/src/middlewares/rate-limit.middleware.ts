@@ -26,17 +26,34 @@ export const authLoginLimiter = rateLimit({
 
 /**
  * Registration limiter
- * 5 requests per hour per IP
+ * 10 requests per hour per IP
  */
 export const authRegisterLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     error: {
       code: "RATE_LIMIT_EXCEEDED",
-      message: "Too many registration attempts. Please try again in an hour.",
+      message: "Too many registration attempts. Please try again later.",
+    },
+  },
+});
+
+/**
+ * OTP request limiter
+ * 10 requests per 15 minutes per IP
+ */
+export const authOtpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: {
+      code: "RATE_LIMIT_EXCEEDED",
+      message: "Too many OTP requests. Please try again in 15 minutes.",
     },
   },
 });
