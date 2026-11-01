@@ -130,6 +130,9 @@ function LoginForm() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="h-password">Password</Label>
+                      <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                        Forgot password?
+                      </Link>
                     </div>
                     <Input id="h-password" type="password" {...hostellerForm.register("password_plain")} />
                     {hostellerForm.formState.errors.password_plain && (
@@ -171,7 +174,12 @@ function LoginForm() {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="m-password">Password</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="m-password">Password</Label>
+                      <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                        Forgot password?
+                      </Link>
+                    </div>
                     <Input id="m-password" type="password" {...managerForm.register("password_plain")} />
                     {managerForm.formState.errors.password_plain && (
                       <p className="text-xs text-destructive">{managerForm.formState.errors.password_plain.message}</p>
@@ -207,7 +215,12 @@ function LoginForm() {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="o-password">Password</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="o-password">Password</Label>
+                      <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                        Forgot password?
+                      </Link>
+                    </div>
                     <Input id="o-password" type="password" {...ownerForm.register("password_plain")} />
                     {ownerForm.formState.errors.password_plain && (
                       <p className="text-xs text-destructive">{ownerForm.formState.errors.password_plain.message}</p>

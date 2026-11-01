@@ -15,7 +15,7 @@ import {
   hashOtp,
 } from "../../utils/crypto.js";
 import { AuthenticationError, AuthorizationError, NotFoundError, ValidationError } from "../../utils/errors.js";
-import { sendOtpEmail } from "../../utils/mailer.js";
+import { sendOtpEmail, sendPasswordResetOtpEmail } from "../../utils/mailer.js";
 import { env } from "../../config/env.js";
 import type {
   LoginOwnerRequest,
@@ -24,6 +24,8 @@ import type {
   RegisterHostellerRequest,
   SendHostellerOtpResponse,
   ChangePasswordRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
   LoginResponse,
   UserRole,
 } from "@hosmos/types";
@@ -457,6 +459,196 @@ export const authService = {
       }
 
       // Revoke all existing refresh tokens for security
+      await tx
+        .update(refreshTokens)
+        .set({ revokedAt: new Date() })
+        .where(and(eq(refreshTokens.userId, userId), eq(refreshTokens.userType, userType), isNull(refreshTokens.revokedAt)));
+    });
+  },
+
+  // ─── Forgot & Reset Password ───────────────────────────────────────────────
+
+  async forgotPassword(input: ForgotPasswordRequest): Promise<{ message: string; cooldown_seconds: number }> {
+    const normalizedEmail = input.email.trim().toLowerCase();
+
+    // Check user across owners, managers, or hostellers
+    let userRecord: { id: string; name: string; type: "owner" | "manager" | "hosteller" } | null = null;
+
+    const [owner] = await db.select({ id: owners.id, name: owners.name }).from(owners).where(eq(owners.email, normalizedEmail));
+    if (owner) {
+      userRecord = { id: owner.id, name: owner.name, type: "owner" };
+    } else {
+      const [manager] = await db.select({ id: managers.id, name: managers.name }).from(managers).where(eq(managers.email, normalizedEmail));
+      if (manager) {
+        userRecord = { id: manager.id, name: manager.name, type: "manager" };
+      } else {
+        const [hosteller] = await db.select({ id: hostellers.id, name: hostellers.name, status: hostellers.status }).from(hostellers).where(eq(hostellers.email, normalizedEmail));
+        if (hosteller && hosteller.status !== "removed") {
+          userRecord = { id: hosteller.id, name: hosteller.name, type: "hosteller" };
+        }
+      }
+    }
+
+    // Generic response to prevent enumeration
+    if (!userRecord) {
+      return {
+        message: "If an account with that email exists, a verification code has been sent.",
+        cooldown_seconds: 60,
+      };
+    }
+
+    // Check 60s cooldown
+    const [recentOtp] = await db
+      .select()
+      .from(otps)
+      .where(
+        and(
+          eq(otps.email, normalizedEmail),
+          eq(otps.purpose, "password_reset"),
+          isNull(otps.consumedAt),
+          gt(otps.expiresAt, new Date())
+        )
+      )
+      .orderBy(desc(otps.createdAt))
+      .limit(1);
+
+    if (recentOtp) {
+      const elapsedSeconds = Math.floor((Date.now() - new Date(recentOtp.createdAt).getTime()) / 1000);
+      const COOLDOWN_SECONDS = 60;
+      if (elapsedSeconds < COOLDOWN_SECONDS) {
+        return {
+          message: "A password reset code was already sent recently. Please check your inbox or wait before retrying.",
+          cooldown_seconds: COOLDOWN_SECONDS - elapsedSeconds,
+        };
+      }
+    }
+
+    // Invalidate prior reset OTPs
+    await db
+      .update(otps)
+      .set({ consumedAt: new Date() })
+      .where(
+        and(
+          eq(otps.email, normalizedEmail),
+          eq(otps.purpose, "password_reset"),
+          isNull(otps.consumedAt)
+        )
+      );
+
+    const rawOtp = generateNumericOtp();
+    const otpHash = hashOtp(rawOtp);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await db.insert(otps).values({
+      email: normalizedEmail,
+      otpHash,
+      purpose: "password_reset",
+      attempts: 0,
+      maxAttempts: 5,
+      expiresAt,
+    });
+
+    console.log(`\n========================================================`);
+    console.log(`🔑 [PASSWORD RESET OTP]`);
+    console.log(`   To: ${normalizedEmail} (${userRecord.name} - ${userRecord.type})`);
+    console.log(`   OTP Code: ${rawOtp}`);
+    console.log(`   Valid For: 10 minutes`);
+    console.log(`========================================================\n`);
+
+    await sendPasswordResetOtpEmail(normalizedEmail, userRecord.name, rawOtp, 10);
+
+    return {
+      message: "If an account with that email exists, a verification code has been sent.",
+      cooldown_seconds: 60,
+    };
+  },
+
+  async resetPasswordWithOtp(input: ResetPasswordRequest): Promise<void> {
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const otpCode = input.otp.trim();
+
+    // Verify unconsumed OTP
+    const [activeOtp] = await db
+      .select()
+      .from(otps)
+      .where(
+        and(
+          eq(otps.email, normalizedEmail),
+          eq(otps.purpose, "password_reset"),
+          isNull(otps.consumedAt),
+          gt(otps.expiresAt, new Date())
+        )
+      )
+      .orderBy(desc(otps.createdAt))
+      .limit(1);
+
+    if (!activeOtp) {
+      throw new ValidationError("Password reset code expired or invalid. Please request a new code.");
+    }
+
+    if (activeOtp.attempts >= activeOtp.maxAttempts) {
+      await db
+        .update(otps)
+        .set({ consumedAt: new Date() })
+        .where(eq(otps.id, activeOtp.id));
+      throw new ValidationError("Too many incorrect attempts. Please request a new reset code.");
+    }
+
+    const inputHash = hashOtp(otpCode);
+    if (inputHash !== activeOtp.otpHash) {
+      const nextAttempts = activeOtp.attempts + 1;
+      await db
+        .update(otps)
+        .set({ attempts: nextAttempts })
+        .where(eq(otps.id, activeOtp.id));
+
+      const remaining = activeOtp.maxAttempts - nextAttempts;
+      throw new ValidationError(
+        remaining > 0
+          ? `Invalid reset code. ${remaining} attempt(s) remaining.`
+          : "Invalid reset code. Maximum attempts exceeded. Please request a new code."
+      );
+    }
+
+    // Find the user to update
+    const newHash = await hashPassword(input.new_password_plain);
+
+    await db.transaction(async (tx) => {
+      // Mark OTP as consumed
+      await tx
+        .update(otps)
+        .set({ consumedAt: new Date() })
+        .where(eq(otps.id, activeOtp.id));
+
+      let userId: string | null = null;
+      let userType: "owner" | "manager" | "hosteller" | null = null;
+
+      const [owner] = await tx.select({ id: owners.id }).from(owners).where(eq(owners.email, normalizedEmail));
+      if (owner) {
+        userId = owner.id;
+        userType = "owner";
+        await tx.update(owners).set({ passwordHash: newHash, mustChangePassword: false, updatedAt: new Date() }).where(eq(owners.id, owner.id));
+      } else {
+        const [manager] = await tx.select({ id: managers.id }).from(managers).where(eq(managers.email, normalizedEmail));
+        if (manager) {
+          userId = manager.id;
+          userType = "manager";
+          await tx.update(managers).set({ passwordHash: newHash, mustChangePassword: false, updatedAt: new Date() }).where(eq(managers.id, manager.id));
+        } else {
+          const [hosteller] = await tx.select({ id: hostellers.id }).from(hostellers).where(eq(hostellers.email, normalizedEmail));
+          if (hosteller) {
+            userId = hosteller.id;
+            userType = "hosteller";
+            await tx.update(hostellers).set({ passwordHash: newHash, status: "active", updatedAt: new Date() }).where(eq(hostellers.id, hosteller.id));
+          }
+        }
+      }
+
+      if (!userId || !userType) {
+        throw new ValidationError("User account not found");
+      }
+
+      // Revoke all existing sessions for this user
       await tx
         .update(refreshTokens)
         .set({ revokedAt: new Date() })

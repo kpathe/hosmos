@@ -100,6 +100,17 @@ export interface ChangePasswordRequest {
   new_password_plain: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+  user_type?: "hosteller" | "manager" | "owner";
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  otp: string;
+  new_password_plain: string;
+}
+
 // ─── Hostel ───────────────────────────────────────────────────────────────────
 
 export interface HostelDto {

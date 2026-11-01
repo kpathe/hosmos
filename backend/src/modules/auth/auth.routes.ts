@@ -39,6 +39,16 @@ const changePasswordSchema = z.object({
   new_password_plain: z.string().min(8, "New password must be at least 8 characters"),
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+const resetPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().length(6, "Reset code must be exactly 6 digits").regex(/^\d+$/, "Code must contain numbers only"),
+  new_password_plain: z.string().min(8, "New password must be at least 8 characters"),
+});
+
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 authRouter.post("/login/owner", authLoginLimiter, validateBody(loginOwnerSchema), authController.loginOwner);
@@ -46,6 +56,9 @@ authRouter.post("/login/manager", authLoginLimiter, validateBody(loginManagerSch
 authRouter.post("/login/hosteller", authLoginLimiter, validateBody(loginHostellerSchema), authController.loginHosteller);
 authRouter.post("/register/hosteller/send-otp", authOtpLimiter, validateBody(sendOtpSchema), authController.sendHostellerOtp);
 authRouter.post("/register/hosteller", authRegisterLimiter, validateBody(registerHostellerSchema), authController.registerHosteller);
+
+authRouter.post("/forgot-password", authOtpLimiter, validateBody(forgotPasswordSchema), authController.forgotPassword);
+authRouter.post("/reset-password", authRegisterLimiter, validateBody(resetPasswordSchema), authController.resetPassword);
 
 authRouter.post("/refresh", authRefreshLimiter, authController.refresh);
 authRouter.post("/logout", authController.logout);

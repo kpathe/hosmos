@@ -199,3 +199,125 @@ export async function sendOtpEmail(
 
   return sendEmail({ to: email, subject, text, html });
 }
+
+/**
+ * Sends a branded password reset OTP email.
+ */
+export async function sendPasswordResetOtpEmail(
+  email: string,
+  recipientName: string,
+  otpCode: string,
+  expiryMinutes: number = 10
+): Promise<boolean> {
+  const subject = `Hosmos Password Reset Code: ${otpCode}`;
+
+  const text = `Hello ${recipientName},\n\nWe received a request to reset your Hosmos account password. Your one-time verification code is:\n\n${otpCode}\n\nThis code will expire in ${expiryMinutes} minutes. If you did not request a password reset, please secure your account immediately.\n\n— Team Hosmos`;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Your Password</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 32px 16px;
+      color: #0f172a;
+    }
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .header {
+      background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+      padding: 32px 24px;
+      text-align: center;
+      color: #ffffff;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .content {
+      padding: 32px 28px;
+    }
+    .greeting {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #1e293b;
+    }
+    .desc {
+      font-size: 14px;
+      color: #64748b;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+    .otp-box {
+      background-color: #fff1f2;
+      border: 2px dashed #fecdd3;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .otp-code {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: 8px;
+      color: #e11d48;
+      margin: 0;
+    }
+    .expiry {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 8px;
+      text-align: center;
+    }
+    .footer {
+      border-top: 1px solid #f1f5f9;
+      padding: 20px 28px;
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+      background-color: #fafafa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Hosmos Account Security</h1>
+    </div>
+    <div class="content">
+      <div class="greeting">Hello ${recipientName || "User"},</div>
+      <div class="desc">
+        We received a request to reset your password. Use the verification code below to authorize the password reset:
+      </div>
+      <div class="otp-box">
+        <p class="otp-code">${otpCode}</p>
+      </div>
+      <p class="expiry">⏱️ This code expires in <strong>${expiryMinutes} minutes</strong>. If you did not make this request, someone may be trying to access your account.</p>
+    </div>
+    <div class="footer">
+      © ${new Date().getFullYear()} Hosmos Hostel Management System.
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return sendEmail({ to: email, subject, text, html });
+}

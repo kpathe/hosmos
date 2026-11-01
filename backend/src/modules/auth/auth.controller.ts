@@ -94,4 +94,22 @@ export const authController = {
       next(error);
     }
   },
+
+  forgotPassword: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await authService.forgotPassword(req.body);
+      res.json({ data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  resetPassword: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await authService.resetPasswordWithOtp(req.body);
+      res.json({ data: { success: true, message: "Password reset successful. You can now log in with your new password." } });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
