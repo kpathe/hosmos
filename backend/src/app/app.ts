@@ -48,13 +48,13 @@ export function createApp(): express.Application {
   // Applied globally. Auth-specific limits are applied at the route level.
   app.use("/api/v1", generalApiLimiter);
 
-  // ── Health Check ────────────────────────────────────────────────────────────
-  app.get("/health", (_req, res) => {
-    res.status(200).json({
-      status: "ok",
-      timestamp: new Date().toISOString(),
-      environment: process.env["NODE_ENV"] ?? "unknown",
-    });
+  // ── Ultra-lightweight Ping & Health Check (for cron-job.org / keepalive) ─────
+  // Returns plain 200 OK (2 bytes) to satisfy strict cron response size limits (<64KB)
+  app.get(["/", "/ping", "/health"], (_req, res) => {
+    res.status(200).type("text/plain").send("OK");
+  });
+  app.head(["/", "/ping", "/health"], (_req, res) => {
+    res.status(200).end();
   });
 
   // ── API Routes (registered in Phase 1+) ────────────────────────────────────
