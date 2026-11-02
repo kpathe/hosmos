@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { useAuth } from "@/contexts/auth-context";
 import type { PortalRoomDto, MeterReadingDto } from "@hosmos/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -68,8 +69,16 @@ export default function PortalRoomPage() {
     );
   }
 
+  const { user } = useAuth();
   const { room, pricing_model, roommates, meter_readings } = roomData;
-  const occupancyPercentage = Math.round((roommates.length / (room.capacity || 1)) * 100);
+
+  // Filter out the hosteller themselves so only fellow roommates are displayed
+  const fellowRoommates = roommates.filter(
+    (mate) => (user?.id ? mate.id !== user.id : true)
+  );
+
+  const totalOccupants = room.active_occupant_count ?? (fellowRoommates.length + 1);
+  const occupancyPercentage = Math.round((totalOccupants / (room.capacity || 1)) * 100);
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
@@ -116,7 +125,7 @@ export default function PortalRoomPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight">
-              {roommates.length} / {room.capacity}
+              {totalOccupants} / {room.capacity}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {occupancyPercentage}% capacity utilized
@@ -175,19 +184,24 @@ export default function PortalRoomPage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                Roommates ({roommates.length})
+                Roommates ({fellowRoommates.length})
               </CardTitle>
               <CardDescription>
                 Fellow residents sharing Room {room.room_number}.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {roommates.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic py-4 text-center">
-                  No other roommates currently assigned.
-                </p>
+              {fellowRoommates.length === 0 ? (
+                <div className="text-center py-6 px-3">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    No other roommates
+                  </p>
+                  <p className="text-xs text-muted-foreground/80 mt-1">
+                    You currently have this room to yourself.
+                  </p>
+                </div>
               ) : (
-                roommates.map((mate) => (
+                fellowRoommates.map((mate) => (
                   <div
                     key={mate.id}
                     className="p-3.5 rounded-xl border bg-muted/20 flex flex-col gap-1.5 hover:bg-muted/40 transition-colors"
@@ -195,7 +209,7 @@ export default function PortalRoomPage() {
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-sm text-foreground">{mate.name}</span>
                       <Badge variant="secondary" className="text-[10px] font-normal">
-                        Occupant
+                        Roommate
                       </Badge>
                     </div>
                     <div className="flex flex-col gap-1 text-xs text-muted-foreground">

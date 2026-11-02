@@ -209,7 +209,7 @@ export class PortalService {
       }
     }
 
-    // Roommates currently active in this room
+    // Room occupants currently active in this room
     const roommateRecords = await db
       .select({
         hosteller: hostellers,
@@ -223,12 +223,17 @@ export class PortalService {
         )
       );
 
-    const roommates = roommateRecords.map((r) => ({
-      id: r.hosteller.id,
-      name: r.hosteller.name,
-      admission_date: r.hosteller.admissionDate,
-      phone: r.hosteller.phone,
-    }));
+    const totalOccupants = roommateRecords.length;
+
+    // Filter out the hosteller themselves so roommates only contains fellow occupants
+    const roommates = roommateRecords
+      .filter((r) => r.hosteller.id !== hostellerId)
+      .map((r) => ({
+        id: r.hosteller.id,
+        name: r.hosteller.name,
+        admission_date: r.hosteller.admissionDate,
+        phone: r.hosteller.phone,
+      }));
 
     // Sub-meter readings for this room
     const readings = await db
@@ -244,6 +249,7 @@ export class PortalService {
         room_number: currentOccupancy.room.roomNumber,
         floor: currentOccupancy.room.floor,
         capacity: currentOccupancy.room.capacity,
+        active_occupant_count: totalOccupants,
       },
       pricing_model: pricingModelInfo,
       roommates,

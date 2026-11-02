@@ -447,6 +447,7 @@ export interface PortalRoomDto {
     room_number: string;
     floor: string;
     capacity: number;
+    active_occupant_count?: number;
   };
   pricing_model: {
     name: string;
